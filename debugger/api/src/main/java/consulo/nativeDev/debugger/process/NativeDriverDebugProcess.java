@@ -74,6 +74,7 @@ import java.util.function.Function;
  * @since 2026-10-06
  */
 public class NativeDriverDebugProcess extends XDebugProcess implements NativeDebugProcess, NativeDebuggerListener {
+    private static final String DEBUGGER_CONSOLE_CONTENT_ID = "NativeDebuggerCommandConsole";
     private static final int DEBUGGER_CONSOLE_TAB = 2;
 
     private static final Logger LOG = Logger.getInstance(NativeDriverDebugProcess.class);
@@ -202,7 +203,7 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
                 ConsoleView console = TextConsoleBuilderFactory.getInstance().createBuilder(getSession().getProject()).getConsole();
                 console.attachToProcess(myConsoleHandler);
                 myConsoleHandler.startNotify();
-                Content content = ui.createContent("NativeDebuggerConsole", console, myDriver.getName(), ExecutionIconGroup.console());
+                Content content = ui.createContent(DEBUGGER_CONSOLE_CONTENT_ID, console, myDriver.getName(), ExecutionIconGroup.console());
                 content.setCloseable(false);
                 ui.addContent(content, DEBUGGER_CONSOLE_TAB, PlaceInGrid.center, false);
             }
