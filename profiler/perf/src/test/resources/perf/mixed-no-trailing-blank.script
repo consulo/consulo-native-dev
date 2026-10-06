@@ -1,0 +1,9 @@
+     Web Content  4242/4243 [003] 100.000001:     250000 cycles:P: 
+	ffffffff81000000 native_write_msr+0x6 ([kernel.kallsyms])
+	    7f0000000001 [unknown] ([unknown])
+	    55d4c3a1d000 std::vector<int, std::allocator<int> >::push_back(int const&)+0x1a (/tmp/a.out)
+	                 square (inlined)
+
+java 88428/88707 14182.263881:         16 cycles:P:
+	 f1918c0ec04 void com.intellij.util.indexing.FileBasedIndexImpl$$Lambda$4423/0x0000000801d35368.run()+0xc4 (/tmp/perf-88428.map)
+	 7f00aa Interpreter+0x1234 (/tmp/perf-88428.map)

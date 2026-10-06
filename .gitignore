@@ -1,0 +1,10 @@
+/.consulo
+!/.consulo/codeStyleSettings.xml
+!/.consulo/copyright
+!/.consulo/runConfigurations
+/out
+/target
+target/
+dependency-reduced-pom.xml
+plugin/sandbox
+.claude/settings.local.json

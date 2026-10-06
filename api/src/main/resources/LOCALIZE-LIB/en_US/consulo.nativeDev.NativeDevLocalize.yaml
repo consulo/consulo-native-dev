@@ -1,0 +1,72 @@
+native.application.configuration.description:
+    text: Runs and debugs a native executable
+native.application.configuration.name:
+    text: Native Application
+native.application.debugger.auto:
+    text: Auto
+native.application.debugger.label:
+    text: 'Debugger:'
+native.application.executable.dialog.title:
+    text: Select Executable
+native.application.executable.label:
+    text: 'Executable:'
+native.application.executable.not.specified:
+    text: Executable is not specified
+native.debugger.does.not.support.disassembly:
+    text: '{0} does not support disassembly'
+native.debugger.does.not.support.memory:
+    text: '{0} does not support memory reads'
+native.debugger.line.breakpoints.title:
+    text: Native Line Breakpoints
+native.debugger.not.found:
+    text: No native debugger found. Install gdb, lldb-dap or CodeLLDB and make sure it is on PATH.
+native.debugger.not.installed:
+    text: Debugger ''{0}'' is not installed or not on PATH.
+native.debugger.registers:
+    text: Registers
+native.debugger.signal.received:
+    text: Program received signal {0}
+native.debugger.signal.terminated:
+    text: Program terminated with signal {0}
+native.profiler.no.configuration:
+    text: No profiler configuration is selected for ''{0}''
+native.profiler.perf.bad.lines:
+    text: 'The perf output has no samples; {0} lines could not be parsed'
+native.profiler.perf.call.graph.dwarf:
+    text: DWARF unwinding
+native.profiler.perf.call.graph.frame.pointers:
+    text: Frame pointers
+native.profiler.perf.call.graph.lbr:
+    text: Last branch records
+native.profiler.perf.call.graph.none:
+    text: None
+native.profiler.perf.data.name:
+    text: perf recording
+native.profiler.perf.name:
+    text: perf
+native.profiler.perf.no.samples:
+    text: The perf output has no samples
+native.profiler.perf.not.found:
+    text: perf is not installed or not on PATH. Install it (the perf or linux-tools package) or set its path in the perf profiler configuration.
+native.profiler.perf.output.file.failed:
+    text: 'Cannot create the perf output file: {0}'
+native.profiler.perf.paranoid:
+    text: 'perf cannot sample: kernel.perf_event_paranoid is {0}. Allow sampling your own processes with: sudo sysctl kernel.perf_event_paranoid=2'
+native.profiler.perf.script.failed:
+    text: 'perf script failed: {0}'
+native.profiler.perf.script.name:
+    text: perf script output
+native.profiler.perf.settings.additional.arguments:
+    text: 'Additional perf record options:'
+native.profiler.perf.settings.call.graph:
+    text: 'Call stacks:'
+native.profiler.perf.settings.executable:
+    text: 'perf executable:'
+native.profiler.perf.settings.executable.dialog.title:
+    text: Select perf Executable
+native.profiler.perf.settings.frequency:
+    text: 'Sampling frequency, Hz:'
+native.profiler.perf.settings.inline.frames:
+    text: Show inlined frames (reading takes longer)
+native.profiler.settings.display.name:
+    text: Native

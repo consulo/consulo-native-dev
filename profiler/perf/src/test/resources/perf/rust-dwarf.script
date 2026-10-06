@@ -1,0 +1,16 @@
+           rdemo 41234 12345.678901:    1001001 cpu-clock:u: 
+	    55d4c3a1b2c3 rdemo::square+0x13 (/home/user/rdemo/target/debug/rdemo)
+	    55d4c3a1b3d4 rdemo::main+0x44 (/home/user/rdemo/target/debug/rdemo)
+	    55d4c3a1a111 core::ops::function::FnOnce::call_once+0xb (/home/user/rdemo/target/debug/rdemo)
+	    7f1234567890 __libc_start_call_main+0x80 (/usr/lib/libc.so.6)
+
+           rdemo 41234 12345.679902:    1001001 cpu-clock:u: 
+	    55d4c3a1b2c9 rdemo::square+0x19 (/home/user/rdemo/target/debug/rdemo)
+	    55d4c3a1b3d4 rdemo::main+0x44 (/home/user/rdemo/target/debug/rdemo)
+	    55d4c3a1a111 core::ops::function::FnOnce::call_once+0xb (/home/user/rdemo/target/debug/rdemo)
+	    7f1234567890 __libc_start_call_main+0x80 (/usr/lib/libc.so.6)
+
+  tokio-runtime-w 41234/41240 12345.680903:    1001001 cpu-clock:u: 
+	    55d4c3a1c000 <alloc::vec::Vec<T> as core::ops::drop::Drop>::drop+0x20 (/home/user/rdemo/target/debug/rdemo)
+	    7f1234560000 start_thread+0x2ef (/usr/lib/libc.so.6)
+

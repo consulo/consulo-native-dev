@@ -1,0 +1,60 @@
+=thread-group-added,id="i1"
+(gdb) 
+~"GNU gdb (GDB) 17.2\n"
+~"Copyright (C) 2025 Free Software Foundation, Inc.\n"
+~"License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law."
+~"\nType \""
+~"show copying\" and \"show warranty\" for details.\n"
+~"This GDB was configured as \"x86_64-pc-linux-gnu\".\n"
+~"Type \"show configuration\" for configuration details.\n"
+~"For bug reporting instructions, please see:\n"
+~"<https://www.gnu.org/software/gdb/bugs/>.\n"
+~"Find the GDB manual and other documentation resources online at:\n    <"
+~"http://www.gnu.org/software/gdb/documentation/>.\n\n"
+~"For help, type \"help\".\n"
+~"Type \"apropos word\" to search for commands related to \"word\".\n"
+^done
+(gdb) 
+^done
+(gdb) 
+^done,bkpt={number="1",type="breakpoint",disp="keep",enabled="y",addr="<MULTIPLE>",times="0",original-location="square",locations=[{number="1.1",enabled="y",addr="0x000000000000104c",func="square",file="multi.c",fullname="/work/multi.c",line="2",thread-groups=["i1"]},{number="1.2",enabled="y",addr="0x0000000000001056",func="square",file="multi.c",fullname="/work/multi.c",line="2",thread-groups=["i1"]}]}
+(gdb) 
+^done,bkpt={number="2",type="breakpoint",disp="keep",enabled="y",addr="0x0000000000001046",func="main",file="multi.c",fullname="/work/multi.c",line="6",thread-groups=["i1"],times="0",original-location="multi.c:6"}
+(gdb) 
+=thread-group-started,id="i1",pid="707359"
+=thread-created,id="1",group-id="i1"
+=breakpoint-modified,bkpt={number="1",type="breakpoint",disp="keep",enabled="y",addr="<MULTIPLE>",times="0",original-location="square",locations=[{number="1.1",enabled="y",addr="0x000055555555504c",func="square",file="multi.c",fullname="/work/multi.c",line="2",thread-groups=["i1"]},{number="1.2",enabled="y",addr="0x0000555555555056",func="square",file="multi.c",fullname="/work/multi.c",line="2",thread-groups=["i1"]}]}
+=breakpoint-modified,bkpt={number="2",type="breakpoint",disp="keep",enabled="y",addr="0x0000555555555046",func="main",file="multi.c",fullname="/work/multi.c",line="6",thread-groups=["i1"],times="0",original-location="multi.c:6"}
+=library-loaded,id="/lib64/ld-linux-x86-64.so.2",target-name="/lib64/ld-linux-x86-64.so.2",host-name="/lib64/ld-linux-x86-64.so.2",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffff7fbe000",to="0x00007ffff7fff000"}]
+~"\nThis GDB supports auto-downloading debuginfo from the following URLs:\n"
+~"  <https://debuginfod.archlinux.org>\n"
+~"Enable debuginfod for this session? (y or [n]) [answered N; input not from terminal]\n"
+~"Debuginfod has been disabled.\nTo make this setting permanent, add 'set debuginfod enabled off' to .gdbinit.\n"
+^running
+*running,thread-id="all"
+(gdb) 
+=library-loaded,id="/usr/lib/libc.so.6",target-name="/usr/lib/libc.so.6",host-name="/usr/lib/libc.so.6",symbols-loaded="0",thread-group="i1",ranges=[{from="0x00007ffff7c00000",to="0x00007ffff7e23000"}]
+~"[Thread debugging using libthread_db enabled]\n"
+~"Using host libthread_db library \"/usr/lib/libthread_db.so.1\".\n"
+=breakpoint-modified,bkpt={number="2",type="breakpoint",disp="keep",enabled="y",addr="0x0000555555555046",func="main",file="multi.c",fullname="/work/multi.c",line="6",thread-groups=["i1"],times="1",original-location="multi.c:6"}
+~"\n"
+~"Breakpoint 2, main (argc=1, argv=<optimized out>) at multi.c:6\n"
+~"6\t    printf(\"%d %d\\n\", a, b);\n"
+*stopped,reason="breakpoint-hit",disp="keep",bkptno="2",frame={addr="0x0000555555555046",func="main",args=[{name="argc",value="1"},{name="argv",value="<optimized out>"}],file="multi.c",fullname="/work/multi.c",line="6",arch="i386:x86-64"},thread-id="1",stopped-threads="all",core="75"
+(gdb) 
+^done,stack=[frame={level="0",addr="0x0000555555555046",func="main",file="multi.c",fullname="/work/multi.c",line="6",arch="i386:x86-64"}]
+(gdb) 
+^done,variables=[{name="argc",arg="1",value="1"},{name="argv",arg="1",value="<optimized out>"},{name="a",value="4"},{name="b",value="9"}]
+(gdb) 
+^running
+*running,thread-id="all"
+(gdb) 
+=breakpoint-modified,bkpt={number="1",type="breakpoint",disp="keep",enabled="y",addr="<MULTIPLE>",times="1",original-location="square",locations=[{number="1.1",enabled="y",addr="0x000055555555504c",func="square",file="multi.c",fullname="/work/multi.c",line="2",thread-groups=["i1"]},{number="1.2",enabled="y",addr="0x0000555555555056",func="square",file="multi.c",fullname="/work/multi.c",line="2",thread-groups=["i1"]}]}
+~"\n"
+~"Breakpoint 1.1, 0x000055555555504c in square (v=<optimized out>) at multi.c:2\n"
+~"2\tstatic inline int square(int v) { return v * v; }\n"
+*stopped,reason="breakpoint-hit",disp="keep",bkptno="1",locno="1",frame={addr="0x000055555555504c",func="square",args=[{name="v",value="<optimized out>"}],file="multi.c",fullname="/work/multi.c",line="2",arch="i386:x86-64"},thread-id="1",stopped-threads="all",core="75"
+(gdb) 
+^exit
+=thread-exited,id="1",group-id="i1"
+=thread-group-exited,id="i1"
