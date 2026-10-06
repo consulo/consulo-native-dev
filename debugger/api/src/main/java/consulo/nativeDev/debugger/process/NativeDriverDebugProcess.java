@@ -27,6 +27,7 @@ import consulo.execution.debug.evaluation.XDebuggerEditorsProvider;
 import consulo.execution.debug.frame.XExecutionStack;
 import consulo.execution.debug.frame.XSuspendContext;
 import consulo.execution.debug.ui.XDebugTabLayouter;
+import consulo.execution.icon.ExecutionIconGroup;
 import consulo.execution.ui.console.ConsoleView;
 import consulo.execution.ui.console.TextConsoleBuilderFactory;
 import consulo.execution.ui.layout.PlaceInGrid;
@@ -73,6 +74,8 @@ import java.util.function.Function;
  * @since 2026-10-06
  */
 public class NativeDriverDebugProcess extends XDebugProcess implements NativeDebugProcess, NativeDebuggerListener {
+    private static final int DEBUGGER_CONSOLE_TAB = 2;
+
     private static final Logger LOG = Logger.getInstance(NativeDriverDebugProcess.class);
 
     private final NativeDebugTarget myTarget;
@@ -110,7 +113,7 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
 
     @Override
     public void start() {
-        myDriver.start(myTarget).thenComposeAsync(o -> {
+        myDriver.start(myTarget).thenCompose(o -> runInitCommands()).thenComposeAsync(o -> {
             ReadAction.run(() -> getSession().initBreakpoints());
             myStarted = true;
             CompletableFuture<?>[] breakpoints = myInitialBreakpoints.stream()
@@ -126,6 +129,19 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
                 myProcessHandler.notifyExited(-1);
             }
         }, myExecutor);
+    }
+
+    private CompletableFuture<?> runInitCommands() {
+        CompletableFuture<?> chain = CompletableFuture.completedFuture(null);
+        for (String command : myTarget.setup().getInitCommands(myDriver.getKind())) {
+            chain = chain.thenCompose(o -> myDriver.executeCommand(command).handle((output, error) -> {
+                if (error != null) {
+                    myConsoleHandler.notifyTextAvailable(command + ": " + message(error) + "\n", ProcessOutputTypes.STDERR);
+                }
+                return Boolean.TRUE;
+            }));
+        }
+        return chain;
     }
 
     @Override
@@ -186,9 +202,9 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
                 ConsoleView console = TextConsoleBuilderFactory.getInstance().createBuilder(getSession().getProject()).getConsole();
                 console.attachToProcess(myConsoleHandler);
                 myConsoleHandler.startNotify();
-                Content content = ui.createContent("NativeDebuggerConsole", console, myDriver.getName(), null);
+                Content content = ui.createContent("NativeDebuggerConsole", console, myDriver.getName(), ExecutionIconGroup.console());
                 content.setCloseable(false);
-                ui.addContent(content, 0, PlaceInGrid.bottom, false);
+                ui.addContent(content, DEBUGGER_CONSOLE_TAB, PlaceInGrid.center, false);
             }
         };
     }

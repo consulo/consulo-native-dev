@@ -18,9 +18,11 @@ package consulo.nativeDev.debugger.dap;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.localize.LocalizeValue;
 import consulo.nativeDev.debugger.driver.NativeDebugTarget;
+import consulo.nativeDev.debugger.driver.NativeDebuggerKind;
 
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -53,8 +55,13 @@ public class GdbDapNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public List<String> getCommandLine(Path executable) {
-        return List.of(executable.toString(), "-q", "-i=dap");
+    public List<String> getCommandLine(Path executable, NativeDebugTarget target) {
+        List<String> commandLine = new ArrayList<>(List.of(executable.toString(), "-q", "-i=dap"));
+        for (String command : target.setup().getInitCommands(NativeDebuggerKind.GDB)) {
+            commandLine.add("-ex");
+            commandLine.add(command);
+        }
+        return commandLine;
     }
 
     @Override

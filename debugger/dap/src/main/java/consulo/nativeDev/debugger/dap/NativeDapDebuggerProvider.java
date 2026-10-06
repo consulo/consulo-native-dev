@@ -36,7 +36,7 @@ import java.util.Map;
 public abstract class NativeDapDebuggerProvider implements NativeDebuggerProvider {
     protected abstract List<String> getExecutableNames();
 
-    public abstract List<String> getCommandLine(Path executable);
+    public abstract List<String> getCommandLine(Path executable, NativeDebugTarget target);
 
     public abstract Map<String, Object> createLaunchArguments(NativeDebugTarget target);
 

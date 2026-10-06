@@ -91,7 +91,7 @@ public class NativeDapDebugProcess extends DAPDebugProcess implements NativeDebu
 
     @Override
     protected DAP createDAP(DAPFactory factory) {
-        GeneralCommandLine commandLine = new GeneralCommandLine(myProvider.getCommandLine(myInstallation.executable()))
+        GeneralCommandLine commandLine = new GeneralCommandLine(myProvider.getCommandLine(myInstallation.executable(), myTarget))
             .withCharset(StandardCharsets.UTF_8);
         Path workingDirectory = myTarget.workingDirectory();
         if (workingDirectory != null) {

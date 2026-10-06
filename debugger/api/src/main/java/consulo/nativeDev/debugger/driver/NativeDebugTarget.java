@@ -33,7 +33,8 @@ public record NativeDebugTarget(NativeDebugTargetKind kind,
                                 @Nullable String terminal,
                                 long processId,
                                 @Nullable Path coreFile,
-                                @Nullable String remoteAddress) {
+                                @Nullable String remoteAddress,
+                                NativeDebuggerSetup setup) {
     public static NativeDebugTarget launch(Path executable,
                                            List<String> arguments,
                                            @Nullable Path workingDirectory,
@@ -47,18 +48,32 @@ public record NativeDebugTarget(NativeDebugTargetKind kind,
             terminal,
             0,
             null,
-            null);
+            null,
+            NativeDebuggerSetup.EMPTY);
     }
 
     public static NativeDebugTarget attach(long processId, @Nullable Path executable) {
-        return new NativeDebugTarget(NativeDebugTargetKind.ATTACH, executable, List.of(), null, Map.of(), null, processId, null, null);
+        return new NativeDebugTarget(NativeDebugTargetKind.ATTACH, executable, List.of(), null, Map.of(), null, processId, null, null, NativeDebuggerSetup.EMPTY);
     }
 
     public static NativeDebugTarget core(Path executable, Path coreFile) {
-        return new NativeDebugTarget(NativeDebugTargetKind.CORE, executable, List.of(), null, Map.of(), null, 0, coreFile, null);
+        return new NativeDebugTarget(NativeDebugTargetKind.CORE, executable, List.of(), null, Map.of(), null, 0, coreFile, null, NativeDebuggerSetup.EMPTY);
     }
 
     public static NativeDebugTarget remote(@Nullable Path executable, String address) {
-        return new NativeDebugTarget(NativeDebugTargetKind.REMOTE, executable, List.of(), null, Map.of(), null, 0, null, address);
+        return new NativeDebugTarget(NativeDebugTargetKind.REMOTE, executable, List.of(), null, Map.of(), null, 0, null, address, NativeDebuggerSetup.EMPTY);
+    }
+
+    public NativeDebugTarget withSetup(NativeDebuggerSetup setup) {
+        return new NativeDebugTarget(kind,
+            executable,
+            arguments,
+            workingDirectory,
+            environment,
+            terminal,
+            processId,
+            coreFile,
+            remoteAddress,
+            setup);
     }
 }

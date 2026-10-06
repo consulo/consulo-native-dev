@@ -63,7 +63,7 @@ public class CppdbgNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public List<String> getCommandLine(Path executable) {
+    public List<String> getCommandLine(Path executable, NativeDebugTarget target) {
         return List.of(executable.toString());
     }
 

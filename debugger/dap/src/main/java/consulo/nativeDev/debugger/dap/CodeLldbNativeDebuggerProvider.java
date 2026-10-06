@@ -19,6 +19,7 @@ import consulo.annotation.component.ExtensionImpl;
 import consulo.localize.LocalizeValue;
 import consulo.nativeDev.debugger.NativeDebuggerInstallation;
 import consulo.nativeDev.debugger.driver.NativeDebugTarget;
+import consulo.nativeDev.debugger.driver.NativeDebuggerKind;
 import consulo.platform.Platform;
 
 import java.io.IOException;
@@ -107,7 +108,7 @@ public class CodeLldbNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public List<String> getCommandLine(Path executable) {
+    public List<String> getCommandLine(Path executable, NativeDebugTarget target) {
         return List.of(executable.toString());
     }
 
@@ -127,6 +128,14 @@ public class CodeLldbNativeDebuggerProvider extends NativeDapDebuggerProvider {
             arguments.put("env", target.environment());
         }
         arguments.put("stopOnEntry", false);
+        List<String> sourceLanguages = target.setup().getSourceLanguages();
+        if (!sourceLanguages.isEmpty()) {
+            arguments.put("sourceLanguages", sourceLanguages);
+        }
+        List<String> initCommands = target.setup().getInitCommands(NativeDebuggerKind.CODELLDB);
+        if (!initCommands.isEmpty()) {
+            arguments.put("initCommands", initCommands);
+        }
         return arguments;
     }
 
