@@ -54,6 +54,10 @@ public interface NativeDebuggerDriver {
 
     CompletableFuture<List<NativeVariable>> getVariables(NativeFrame frame);
 
+    default CompletableFuture<List<NativeVariable>> getFileVariables(NativeFrame frame) {
+        return CompletableFuture.completedFuture(List.of());
+    }
+
     CompletableFuture<List<NativeVariable>> getRegisters(NativeFrame frame);
 
     CompletableFuture<List<NativeVariable>> getChildren(NativeVariable variable, int from, int count);

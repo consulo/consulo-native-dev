@@ -23,6 +23,7 @@ import consulo.nativeDev.debugger.mi.MIRecord;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -74,6 +75,21 @@ public class GdbMiConverterTest {
 
         assertTrue(breakpoint.pending());
         assertTrue(breakpoint.locations().isEmpty());
+    }
+
+    @Test
+    public void fileVariables() {
+        Map<String, List<String>> variables = GdbMiConverter.fileVariables(parse("^done,symbols={debug=["
+            + "{filename=\"../src/demo.pas\",fullname=\"/work/src/demo.pas\",symbols=["
+            + "{name=\"A\",type=\"TANIMAL\",description=\"static A : TANIMAL;\"},"
+            + "{line=\"33\",name=\"S\",type=\"ANSISTRING\",description=\"static S : ANSISTRING;\"},"
+            + "{line=\"33\",name=\"S\",type=\"ANSISTRING\",description=\"static S : ANSISTRING;\"}]},"
+            + "{filename=\"util.c\",symbols=[{line=\"4\",name=\"counter\",type=\"int\",description=\"static int counter;\"}]}]}")
+            .results());
+
+        assertEquals(List.of("A", "S"), variables.get("/work/src/demo.pas"));
+        assertEquals(List.of("counter"), variables.get("util.c"));
+        assertTrue(GdbMiConverter.fileVariables(parse("^done,symbols={}").results()).isEmpty());
     }
 
     @Test

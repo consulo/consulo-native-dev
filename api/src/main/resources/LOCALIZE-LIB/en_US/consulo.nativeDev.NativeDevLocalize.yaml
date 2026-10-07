@@ -16,6 +16,8 @@ native.debugger.does.not.support.disassembly:
     text: '{0} does not support disassembly'
 native.debugger.does.not.support.memory:
     text: '{0} does not support memory reads'
+native.debugger.globals:
+    text: Globals
 native.debugger.line.breakpoints.title:
     text: Native Line Breakpoints
 native.debugger.not.found:

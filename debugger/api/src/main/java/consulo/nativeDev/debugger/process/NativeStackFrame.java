@@ -24,15 +24,19 @@ import consulo.execution.debug.frame.XCompositeNode;
 import consulo.execution.debug.frame.XStackFrame;
 import consulo.execution.debug.frame.XValueChildrenList;
 import consulo.nativeDev.debugger.driver.NativeDebuggerCapability;
+import consulo.nativeDev.debugger.driver.NativeDebuggerDriver;
 import consulo.nativeDev.debugger.driver.NativeFrame;
 import consulo.nativeDev.debugger.driver.NativeVariable;
 import consulo.ui.ex.ColoredTextContainer;
 import consulo.ui.ex.SimpleTextAttributes;
+import consulo.util.lang.Pair;
 import consulo.util.lang.lazy.LazyValue;
 import consulo.virtualFileSystem.LocalFileSystem;
 import consulo.virtualFileSystem.VirtualFile;
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 /**
@@ -88,7 +92,9 @@ class NativeStackFrame extends XStackFrame {
 
     @Override
     public void computeChildren(XCompositeNode node) {
-        myProcess.getDriver().getVariables(myFrame).whenCompleteAsync((variables, error) -> {
+        NativeDebuggerDriver driver = myProcess.getDriver();
+        CompletableFuture<List<NativeVariable>> fileVariables = driver.getFileVariables(myFrame).exceptionally(error -> List.of());
+        driver.getVariables(myFrame).thenCombine(fileVariables, Pair::create).whenCompleteAsync((variables, error) -> {
             if (node.isObsolete()) {
                 return;
             }
@@ -96,11 +102,16 @@ class NativeStackFrame extends XStackFrame {
                 node.setErrorMessage(NativeDriverDebugProcess.message(error));
                 return;
             }
-            XValueChildrenList children = new XValueChildrenList(variables.size());
-            for (NativeVariable variable : variables) {
+            List<NativeVariable> locals = variables.getFirst();
+            List<NativeVariable> globals = variables.getSecond();
+            XValueChildrenList children = new XValueChildrenList(locals.size());
+            for (NativeVariable variable : locals) {
                 children.add(new NativeValue(myProcess, variable, variable.name(), this));
             }
-            if (myProcess.getDriver().getCapabilities().contains(NativeDebuggerCapability.REGISTERS)) {
+            if (!globals.isEmpty()) {
+                children.addTopGroup(new NativeFileVariableGroup(myProcess, this, globals, locals.isEmpty()));
+            }
+            if (driver.getCapabilities().contains(NativeDebuggerCapability.REGISTERS)) {
                 children.addBottomGroup(new NativeRegisterGroup(myProcess, myFrame));
             }
             node.addChildren(children, true);

@@ -32,7 +32,9 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author VISTALL
@@ -169,6 +171,26 @@ public final class GdbMiConverter {
             result.add(value.isConst() ? unescape(value.asConst().value()) : "");
         }
         return result;
+    }
+
+    public static Map<String, List<String>> fileVariables(MITList results) {
+        Map<String, List<String>> namesByFile = new LinkedHashMap<>();
+        MITList symbols = tuple(results, "symbols");
+        for (MITList file : tuples(symbols == null ? null : symbols.valueOf("debug"))) {
+            String fullName = string(file, "fullname");
+            String path = fullName != null ? fullName : string(file, "filename");
+            if (path == null) {
+                continue;
+            }
+            List<String> names = namesByFile.computeIfAbsent(path, key -> new ArrayList<>());
+            for (MITList symbol : tuples(file.valueOf("symbols"))) {
+                String name = string(symbol, "name");
+                if (name != null && !names.contains(name)) {
+                    names.add(name);
+                }
+            }
+        }
+        return namesByFile;
     }
 
     public static NativeFrame frame(String threadId, MITList frame) {

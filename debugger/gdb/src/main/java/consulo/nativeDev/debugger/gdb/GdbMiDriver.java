@@ -110,6 +110,7 @@ public class GdbMiDriver implements NativeDebuggerDriver {
     private volatile String myName = "gdb";
     private volatile boolean myRunRequested;
     private volatile @Nullable CompletableFuture<List<String>> myRegisterNames;
+    private volatile @Nullable CompletableFuture<Map<String, List<String>>> myFileVariableNames;
 
     public GdbMiDriver(ProcessHandlerBuilderFactory processHandlerBuilderFactory,
                        Path gdbExecutable,
@@ -285,6 +286,21 @@ public class GdbMiDriver implements NativeDebuggerDriver {
                 if (name != null) {
                     variables.add(createVariable(frame, name).exceptionally(e -> errorVariable(name, e)));
                 }
+            }
+            return all(variables);
+        });
+    }
+
+    @Override
+    public CompletableFuture<List<NativeVariable>> getFileVariables(NativeFrame frame) {
+        String file = frame.file();
+        if (file == null) {
+            return CompletableFuture.completedFuture(List.of());
+        }
+        return fileVariableNames().thenCompose(namesByFile -> {
+            List<CompletableFuture<NativeVariable>> variables = new ArrayList<>();
+            for (String name : namesByFile.getOrDefault(file, List.of())) {
+                variables.add(createVariable(frame, name).exceptionally(e -> errorVariable(name, e)));
             }
             return all(variables);
         });
@@ -687,6 +703,17 @@ public class GdbMiDriver implements NativeDebuggerDriver {
                 return new NativeVariable(expression, null, value == null ? "" : value, false, null);
             });
         });
+    }
+
+    private CompletableFuture<Map<String, List<String>>> fileVariableNames() {
+        CompletableFuture<Map<String, List<String>>> names = myFileVariableNames;
+        if (names == null) {
+            names = send("-symbol-info-variables")
+                .thenApply(record -> GdbMiConverter.fileVariables(record.results()))
+                .exceptionally(error -> Map.of());
+            myFileVariableNames = names;
+        }
+        return names;
     }
 
     private CompletableFuture<List<String>> registerNames() {
