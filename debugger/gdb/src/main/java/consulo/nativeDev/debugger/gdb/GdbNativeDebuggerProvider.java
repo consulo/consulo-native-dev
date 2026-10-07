@@ -76,6 +76,7 @@ public class GdbNativeDebuggerProvider implements NativeDebuggerProvider {
         ExecutorService executor = myConcurrency.createBoundedApplicationPoolExecutor("GDB", myConcurrency.getExecutorService(), 1);
         return new NativeDriverDebugProcess(session,
             target,
+            this,
             executor,
             listener -> new GdbMiDriver(myProcessHandlerBuilderFactory, installation.executable(), List.of(), listener, executor));
     }

@@ -18,7 +18,6 @@ package consulo.nativeDev.debugger.dap;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.localize.LocalizeValue;
 import consulo.nativeDev.debugger.driver.NativeDebugTarget;
-import consulo.nativeDev.debugger.driver.NativeDebuggerKind;
 import consulo.platform.Platform;
 
 import java.nio.file.Path;
@@ -41,6 +40,11 @@ public class LldbDapNativeDebuggerProvider extends NativeDapDebuggerProvider {
     @Override
     public String getId() {
         return ID;
+    }
+
+    @Override
+    public String getFamilyId() {
+        return LLDB_FAMILY;
     }
 
     @Override
@@ -92,7 +96,7 @@ public class LldbDapNativeDebuggerProvider extends NativeDapDebuggerProvider {
         }
         arguments.put("env", env);
         arguments.put("stopOnEntry", false);
-        List<String> initCommands = target.setup().getInitCommands(NativeDebuggerKind.LLDB);
+        List<String> initCommands = target.setup().getInitCommands(this);
         if (!initCommands.isEmpty()) {
             arguments.put("initCommands", initCommands);
         }

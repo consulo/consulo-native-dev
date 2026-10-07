@@ -15,6 +15,8 @@
  */
 package consulo.nativeDev.debugger.driver;
 
+import consulo.nativeDev.debugger.NativeDebuggerProvider;
+
 import java.util.List;
 
 /**
@@ -29,7 +31,11 @@ public interface NativeDebuggerSetup {
         return List.of();
     }
 
-    default List<String> getInitCommands(NativeDebuggerKind kind) {
+    /**
+     * @param debugger which debugger runs the target - its {@link NativeDebuggerProvider#getFamilyId() family} says which
+     *                 commands it takes, its id what is special about it
+     */
+    default List<String> getInitCommands(NativeDebuggerProvider debugger) {
         return List.of();
     }
 }

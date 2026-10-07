@@ -23,7 +23,6 @@ import consulo.nativeDev.debugger.driver.NativeDebugTargetKind;
 import consulo.nativeDev.debugger.driver.NativeDebuggerCapability;
 import consulo.nativeDev.debugger.driver.NativeDebuggerDriver;
 import consulo.nativeDev.debugger.driver.NativeDebuggerException;
-import consulo.nativeDev.debugger.driver.NativeDebuggerKind;
 import consulo.nativeDev.debugger.driver.NativeDebuggerListener;
 import consulo.nativeDev.debugger.driver.NativeExitEvent;
 import consulo.nativeDev.debugger.driver.NativeFrame;
@@ -127,11 +126,6 @@ public class GdbMiDriver implements NativeDebuggerDriver {
     @Override
     public String getName() {
         return myName;
-    }
-
-    @Override
-    public NativeDebuggerKind getKind() {
-        return NativeDebuggerKind.GDB;
     }
 
     @Override

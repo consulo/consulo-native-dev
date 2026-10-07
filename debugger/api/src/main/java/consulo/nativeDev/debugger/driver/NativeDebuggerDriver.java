@@ -28,8 +28,6 @@ import java.util.concurrent.CompletableFuture;
 public interface NativeDebuggerDriver {
     String getName();
 
-    NativeDebuggerKind getKind();
-
     Set<NativeDebuggerCapability> getCapabilities();
 
     CompletableFuture<?> start(NativeDebugTarget target);

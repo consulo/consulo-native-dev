@@ -18,7 +18,6 @@ package consulo.nativeDev.debugger.dap;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.localize.LocalizeValue;
 import consulo.nativeDev.debugger.driver.NativeDebugTarget;
-import consulo.nativeDev.debugger.driver.NativeDebuggerKind;
 
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -40,6 +39,11 @@ public class GdbDapNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
+    public String getFamilyId() {
+        return GDB_FAMILY;
+    }
+
+    @Override
     public LocalizeValue getDisplayName() {
         return LocalizeValue.of("GDB (DAP)");
     }
@@ -57,7 +61,7 @@ public class GdbDapNativeDebuggerProvider extends NativeDapDebuggerProvider {
     @Override
     public List<String> getCommandLine(Path executable, NativeDebugTarget target) {
         List<String> commandLine = new ArrayList<>(List.of(executable.toString(), "-q", "-i=dap"));
-        for (String command : target.setup().getInitCommands(NativeDebuggerKind.GDB)) {
+        for (String command : target.setup().getInitCommands(this)) {
             commandLine.add("-ex");
             commandLine.add(command);
         }

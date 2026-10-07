@@ -21,6 +21,7 @@ import consulo.execution.debug.XDebugProcess;
 import consulo.execution.debug.XDebugSession;
 import consulo.localize.LocalizeValue;
 import consulo.nativeDev.debugger.driver.NativeDebugTarget;
+import consulo.nativeDev.debugger.driver.NativeDebuggerSetup;
 import consulo.process.ExecutionException;
 
 import java.util.List;
@@ -31,7 +32,25 @@ import java.util.List;
  */
 @ExtensionAPI(ComponentScope.APPLICATION)
 public interface NativeDebuggerProvider {
+    /**
+     * Family of debuggers which take gdb commands - gdb itself, also over DAP.
+     */
+    String GDB_FAMILY = "gdb";
+
+    /**
+     * Family of debuggers which take lldb commands - lldb-dap, CodeLLDB.
+     */
+    String LLDB_FAMILY = "lldb";
+
     String getId();
+
+    /**
+     * Which debuggers this one speaks the commands of - so a {@link NativeDebuggerSetup} gives one set of init commands
+     * to all of them. A debugger of its own kind is a family of its own.
+     */
+    default String getFamilyId() {
+        return getId();
+    }
 
     LocalizeValue getDisplayName();
 

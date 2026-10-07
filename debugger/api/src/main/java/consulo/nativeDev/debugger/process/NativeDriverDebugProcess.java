@@ -34,6 +34,7 @@ import consulo.execution.ui.layout.PlaceInGrid;
 import consulo.execution.ui.layout.RunnerLayoutUi;
 import consulo.logging.Logger;
 import consulo.nativeDev.debugger.NativeDebugProcess;
+import consulo.nativeDev.debugger.NativeDebuggerProvider;
 import consulo.nativeDev.localize.NativeDevLocalize;
 import consulo.nativeDev.debugger.NativeDebuggerLanguageSupport;
 import consulo.nativeDev.debugger.NativeDebuggerEditorsProvider;
@@ -80,6 +81,7 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
     private static final Logger LOG = Logger.getInstance(NativeDriverDebugProcess.class);
 
     private final NativeDebugTarget myTarget;
+    private final NativeDebuggerProvider myProvider;
     private final ExecutorService myExecutor;
     private final NativeDebuggerDriver myDriver;
     private final NativeDebugProcessHandler myProcessHandler;
@@ -92,11 +94,13 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
     private volatile boolean myStarted;
 
     public NativeDriverDebugProcess(XDebugSession session,
-                              NativeDebugTarget target,
-                              ExecutorService executor,
-                              Function<NativeDebuggerListener, NativeDebuggerDriver> driverFactory) {
+                                    NativeDebugTarget target,
+                                    NativeDebuggerProvider provider,
+                                    ExecutorService executor,
+                                    Function<NativeDebuggerListener, NativeDebuggerDriver> driverFactory) {
         super(session);
         myTarget = target;
+        myProvider = provider;
         myExecutor = executor;
         myDriver = driverFactory.apply(this);
         myProcessHandler = new NativeDebugProcessHandler(this, target);
@@ -134,7 +138,7 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
 
     private CompletableFuture<?> runInitCommands() {
         CompletableFuture<?> chain = CompletableFuture.completedFuture(null);
-        for (String command : myTarget.setup().getInitCommands(myDriver.getKind())) {
+        for (String command : myTarget.setup().getInitCommands(myProvider)) {
             chain = chain.thenCompose(o -> myDriver.executeCommand(command).handle((output, error) -> {
                 if (error != null) {
                     myConsoleHandler.notifyTextAvailable(command + ": " + message(error) + "\n", ProcessOutputTypes.STDERR);
