@@ -15,6 +15,7 @@
  */
 package consulo.nativeDev.debugger.dap;
 
+import consulo.container.plugin.PluginManager;
 import consulo.execution.debug.XDebugProcess;
 import consulo.execution.debug.XDebugSession;
 import consulo.nativeDev.debugger.NativeDebuggerInstallation;
@@ -24,6 +25,7 @@ import consulo.platform.Platform;
 import consulo.process.PathEnvironmentVariableUtil;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +44,10 @@ public abstract class NativeDapDebuggerProvider implements NativeDebuggerProvide
 
     @Override
     public List<NativeDebuggerInstallation> findInstallations() {
+        return findInPath();
+    }
+
+    protected List<NativeDebuggerInstallation> findInPath() {
         boolean windows = Platform.current().os().isWindows();
         List<NativeDebuggerInstallation> installations = new ArrayList<>();
         for (String name : getExecutableNames()) {
@@ -51,6 +57,38 @@ public abstract class NativeDapDebuggerProvider implements NativeDebuggerProvide
             }
         }
         return installations;
+    }
+
+    protected List<NativeDebuggerInstallation> findInstallations(String pathProperty, String bundledName) {
+        Platform platform = Platform.current();
+        List<NativeDebuggerInstallation> installations = new ArrayList<>();
+
+        String overridePath = platform.jvm().getRuntimeProperty(pathProperty);
+        if (overridePath != null && !overridePath.isEmpty()) {
+            addExecutable(installations, Path.of(overridePath));
+        }
+
+        File pluginPath = PluginManager.getPluginPath(getClass());
+        List<String> executableNames = getExecutableNames();
+        if (pluginPath != null && !executableNames.isEmpty()) {
+            String directory = platform.os().fileNamePrefix() + "-" + bundledName + platform.jvm().arch().fileNameSuffix();
+            String executableName = platform.os().isWindows() ? executableNames.get(0) + ".exe" : executableNames.get(0);
+            addExecutable(installations, pluginPath.toPath().resolve(directory).resolve(executableName));
+        }
+
+        installations.addAll(findInPath());
+        return installations;
+    }
+
+    private void addExecutable(List<NativeDebuggerInstallation> installations, Path executable) {
+        if (!Files.isRegularFile(executable)) {
+            return;
+        }
+        if (!Files.isExecutable(executable)) {
+            //noinspection ResultOfMethodCallIgnored
+            executable.toFile().setExecutable(true, false);
+        }
+        installations.add(new NativeDebuggerInstallation(getId(), executable));
     }
 
     @Override

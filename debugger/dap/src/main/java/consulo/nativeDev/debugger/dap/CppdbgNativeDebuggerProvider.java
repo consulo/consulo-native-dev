@@ -54,7 +54,7 @@ public class CppdbgNativeDebuggerProvider extends NativeDapDebuggerProvider {
         if (!Platform.current().os().isWindows()) {
             return List.of();
         }
-        return super.findInstallations();
+        return findInstallations("cppdbg.path", "cppdbg");
     }
 
     @Override
@@ -79,6 +79,7 @@ public class CppdbgNativeDebuggerProvider extends NativeDapDebuggerProvider {
         if (workingDirectory != null) {
             arguments.put("cwd", workingDirectory.toString());
         }
+        arguments.put("stopOnEntry", Boolean.FALSE);
         return arguments;
     }
 }

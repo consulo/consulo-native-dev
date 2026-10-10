@@ -15,7 +15,6 @@
  */
 package consulo.nativeDev.impl.run;
 
-import consulo.execution.CommonProgramRunConfigurationParameters;
 import consulo.execution.configuration.CommandLineState;
 import consulo.execution.configuration.ConfigurationFactory;
 import consulo.execution.configuration.RunConfiguration;
@@ -25,15 +24,15 @@ import consulo.execution.configuration.RuntimeConfigurationError;
 import consulo.execution.configuration.ui.SettingsEditor;
 import consulo.execution.executor.Executor;
 import consulo.execution.runner.ExecutionEnvironment;
-import consulo.nativeDev.debugger.NativeDebuggableRunProfile;
 import consulo.nativeDev.debugger.driver.NativeDebugTarget;
+import consulo.nativeDev.debugger.run.NativeProgramRunConfiguration;
+import consulo.nativeDev.debugger.run.NativeProgramSettings;
 import consulo.nativeDev.localize.NativeDevLocalize;
 import consulo.nativeDev.profiler.NativeProfilableRunProfile;
 import consulo.process.ExecutionException;
 import consulo.process.ProcessHandler;
 import consulo.process.ProcessHandlerBuilderFactory;
 import consulo.process.cmd.GeneralCommandLine;
-import consulo.process.cmd.ParametersListUtil;
 import consulo.project.Project;
 import consulo.util.lang.StringUtil;
 import consulo.util.xml.serializer.InvalidDataException;
@@ -42,21 +41,15 @@ import org.jdom.Element;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * @author VISTALL
  * @since 2026-10-06
  */
 public class NativeApplicationConfiguration extends RunConfigurationBase
-    implements CommonProgramRunConfigurationParameters, NativeDebuggableRunProfile, NativeProfilableRunProfile {
+    implements NativeProgramRunConfiguration, NativeProfilableRunProfile {
     private String myExecutablePath = "";
-    private @Nullable String myProgramParameters;
-    private @Nullable String myWorkingDirectory;
-    private Map<String, String> myEnvs = new LinkedHashMap<>();
-    private boolean myPassParentEnvs = true;
-    private @Nullable String myDebuggerProviderId;
+    private NativeProgramSettings myProgramSettings = new NativeProgramSettings();
 
     public NativeApplicationConfiguration(Project project, ConfigurationFactory factory, String name) {
         super(project, factory, name);
@@ -71,52 +64,8 @@ public class NativeApplicationConfiguration extends RunConfigurationBase
     }
 
     @Override
-    public void setProgramParameters(@Nullable String value) {
-        myProgramParameters = value;
-    }
-
-    @Override
-    public @Nullable String getProgramParameters() {
-        return myProgramParameters;
-    }
-
-    @Override
-    public void setWorkingDirectory(@Nullable String value) {
-        myWorkingDirectory = value;
-    }
-
-    @Override
-    public @Nullable String getWorkingDirectory() {
-        return myWorkingDirectory;
-    }
-
-    @Override
-    public void setEnvs(Map<String, String> envs) {
-        myEnvs = new LinkedHashMap<>(envs);
-    }
-
-    @Override
-    public Map<String, String> getEnvs() {
-        return myEnvs;
-    }
-
-    @Override
-    public void setPassParentEnvs(boolean passParentEnvs) {
-        myPassParentEnvs = passParentEnvs;
-    }
-
-    @Override
-    public boolean isPassParentEnvs() {
-        return myPassParentEnvs;
-    }
-
-    @Override
-    public @Nullable String getDebuggerProviderId() {
-        return myDebuggerProviderId;
-    }
-
-    public void setDebuggerProviderId(@Nullable String debuggerProviderId) {
-        myDebuggerProviderId = debuggerProviderId;
+    public NativeProgramSettings getProgramSettings() {
+        return myProgramSettings;
     }
 
     @Override
@@ -146,17 +95,7 @@ public class NativeApplicationConfiguration extends RunConfigurationBase
     }
 
     public GeneralCommandLine createCommandLine() {
-        GeneralCommandLine commandLine = new GeneralCommandLine(myExecutablePath);
-        commandLine.addParameters(ParametersListUtil.parse(StringUtil.notNullize(myProgramParameters)));
-        String workingDirectory = myWorkingDirectory;
-        if (!StringUtil.isEmptyOrSpaces(workingDirectory)) {
-            commandLine.withWorkDirectory(workingDirectory);
-        }
-        commandLine.withEnvironment(myEnvs);
-        commandLine.withParentEnvironmentType(myPassParentEnvs
-            ? GeneralCommandLine.ParentEnvironmentType.CONSOLE
-            : GeneralCommandLine.ParentEnvironmentType.NONE);
-        return commandLine;
+        return myProgramSettings.createCommandLine(myExecutablePath, null);
     }
 
     @Override
@@ -164,52 +103,27 @@ public class NativeApplicationConfiguration extends RunConfigurationBase
         if (StringUtil.isEmptyOrSpaces(myExecutablePath)) {
             throw new ExecutionException(NativeDevLocalize.nativeApplicationExecutableNotSpecified().get());
         }
-        String workingDirectory = myWorkingDirectory;
-        return NativeDebugTarget.launch(Path.of(myExecutablePath),
-            ParametersListUtil.parse(StringUtil.notNullize(myProgramParameters)),
-            StringUtil.isEmptyOrSpaces(workingDirectory) ? null : Path.of(workingDirectory),
-            myEnvs,
-            null);
+        return myProgramSettings.createDebugTarget(Path.of(myExecutablePath), null);
+    }
+
+    @Override
+    public RunConfiguration clone() {
+        NativeApplicationConfiguration clone = (NativeApplicationConfiguration) super.clone();
+        clone.myProgramSettings = myProgramSettings.copy();
+        return clone;
     }
 
     @Override
     public void readExternal(Element element) throws InvalidDataException {
         super.readExternal(element);
         myExecutablePath = StringUtil.notNullize(element.getAttributeValue("executable"));
-        myProgramParameters = element.getAttributeValue("parameters");
-        myWorkingDirectory = element.getAttributeValue("working-directory");
-        myPassParentEnvs = !"false".equals(element.getAttributeValue("pass-parent-envs"));
-        myDebuggerProviderId = element.getAttributeValue("debugger");
-        myEnvs = new LinkedHashMap<>();
-        for (Element env : element.getChildren("env")) {
-            String name = env.getAttributeValue("name");
-            if (name != null) {
-                myEnvs.put(name, StringUtil.notNullize(env.getAttributeValue("value")));
-            }
-        }
+        myProgramSettings.readExternal(element);
     }
 
     @Override
     public void writeExternal(Element element) throws WriteExternalException {
         super.writeExternal(element);
         element.setAttribute("executable", myExecutablePath);
-        if (myProgramParameters != null) {
-            element.setAttribute("parameters", myProgramParameters);
-        }
-        if (myWorkingDirectory != null) {
-            element.setAttribute("working-directory", myWorkingDirectory);
-        }
-        if (!myPassParentEnvs) {
-            element.setAttribute("pass-parent-envs", "false");
-        }
-        if (myDebuggerProviderId != null) {
-            element.setAttribute("debugger", myDebuggerProviderId);
-        }
-        for (Map.Entry<String, String> entry : myEnvs.entrySet()) {
-            Element env = new Element("env");
-            env.setAttribute("name", entry.getKey());
-            env.setAttribute("value", entry.getValue());
-            element.addContent(env);
-        }
+        myProgramSettings.writeExternal(element);
     }
 }

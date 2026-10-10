@@ -28,6 +28,8 @@ import consulo.execution.debug.frame.XExecutionStack;
 import consulo.execution.debug.frame.XSuspendContext;
 import consulo.execution.debug.ui.XDebugTabLayouter;
 import consulo.execution.icon.ExecutionIconGroup;
+import consulo.execution.process.ProcessTerminatedListener;
+import consulo.execution.ui.ExecutionConsole;
 import consulo.execution.ui.console.ConsoleView;
 import consulo.execution.ui.console.TextConsoleBuilderFactory;
 import consulo.execution.ui.layout.PlaceInGrid;
@@ -104,6 +106,7 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
         myExecutor = executor;
         myDriver = driverFactory.apply(this);
         myProcessHandler = new NativeDebugProcessHandler(this, target);
+        ProcessTerminatedListener.attach(myProcessHandler, session.getProject());
         myConsoleHandler = new NativeDebuggerConsoleHandler(this);
         myBreakpointHandlers = new XBreakpointHandler<?>[]{new NativeLineBreakpointHandler(this)};
     }
@@ -200,6 +203,15 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
     }
 
     @Override
+    public ExecutionConsole createConsole() {
+        ExecutionConsole console = super.createConsole();
+        if (console instanceof ConsoleView consoleView) {
+            consoleView.attachToProcess(myProcessHandler);
+        }
+        return console;
+    }
+
+    @Override
     public XDebugTabLayouter createTabLayouter() {
         return new XDebugTabLayouter() {
             @Override
@@ -207,7 +219,7 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
                 ConsoleView console = TextConsoleBuilderFactory.getInstance().createBuilder(getSession().getProject()).getConsole();
                 console.attachToProcess(myConsoleHandler);
                 myConsoleHandler.startNotify();
-                Content content = ui.createContent(DEBUGGER_CONSOLE_CONTENT_ID, console, myDriver.getName(), ExecutionIconGroup.console());
+                Content content = ui.createContent(DEBUGGER_CONSOLE_CONTENT_ID, console, myProvider.getDisplayName().get(), ExecutionIconGroup.console());
                 content.setCloseable(false);
                 ui.addContent(content, DEBUGGER_CONSOLE_TAB, PlaceInGrid.center, false);
             }

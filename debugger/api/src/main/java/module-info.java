@@ -41,4 +41,5 @@ module consulo.nativeDev.debugger.api {
     exports consulo.nativeDev.debugger;
     exports consulo.nativeDev.debugger.driver;
     exports consulo.nativeDev.debugger.process;
+    exports consulo.nativeDev.debugger.run;
 }

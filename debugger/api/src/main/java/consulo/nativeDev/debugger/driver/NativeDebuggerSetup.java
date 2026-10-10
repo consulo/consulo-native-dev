@@ -15,6 +15,7 @@
  */
 package consulo.nativeDev.debugger.driver;
 
+import consulo.nativeDev.debugger.NativeDebuggerInstallation;
 import consulo.nativeDev.debugger.NativeDebuggerProvider;
 
 import java.util.List;
@@ -36,6 +37,15 @@ public interface NativeDebuggerSetup {
      *                 commands it takes, its id what is special about it
      */
     default List<String> getInitCommands(NativeDebuggerProvider debugger) {
+        return List.of();
+    }
+
+    /**
+     * Debuggers shipped with the toolchain the target was built by, most preferred first. "Auto" tries them before anything
+     * found on the machine - only they are sure to understand the language and runtime of the target (e.g. the LLDB of a
+     * Swift toolchain knows Swift types, a stock LLDB does not). A debugger chosen explicitly keeps its own lookup.
+     */
+    default List<NativeDebuggerInstallation> getToolchainDebuggers() {
         return List.of();
     }
 }

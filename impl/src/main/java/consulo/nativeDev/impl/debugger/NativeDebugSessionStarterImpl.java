@@ -35,6 +35,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.Nullable;
 
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -64,7 +65,21 @@ public class NativeDebugSessionStarterImpl implements NativeDebugSessionStarter 
 
         NativeDebuggerProvider debuggerProvider = null;
         NativeDebuggerInstallation debuggerInstallation = null;
+        if (debuggerProviderId == null) {
+            for (NativeDebuggerInstallation installation : target.setup().getToolchainDebuggers()) {
+                NativeDebuggerProvider candidate = findProvider(providers, installation.providerId());
+                if (candidate != null && Files.isRegularFile(installation.executable())) {
+                    debuggerProvider = candidate;
+                    debuggerInstallation = installation;
+                    break;
+                }
+            }
+        }
+
         for (NativeDebuggerProvider candidate : providers) {
+            if (debuggerProvider != null) {
+                break;
+            }
             if (debuggerProviderId != null && !debuggerProviderId.equals(candidate.getId())) {
                 continue;
             }
@@ -96,6 +111,15 @@ public class NativeDebugSessionStarterImpl implements NativeDebugSessionStarter 
             }
         });
         return session.getRunContentDescriptor();
+    }
+
+    private static @Nullable NativeDebuggerProvider findProvider(List<NativeDebuggerProvider> providers, String providerId) {
+        for (NativeDebuggerProvider provider : providers) {
+            if (provider.getId().equals(providerId)) {
+                return provider;
+            }
+        }
+        return null;
     }
 
     private static List<NativeDebuggerInstallation> findInstallations(NativeDebuggerProvider provider) {
