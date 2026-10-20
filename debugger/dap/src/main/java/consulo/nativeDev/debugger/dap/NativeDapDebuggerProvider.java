@@ -42,6 +42,20 @@ public abstract class NativeDapDebuggerProvider implements NativeDebuggerProvide
 
     public abstract Map<String, Object> createLaunchArguments(NativeDebugTarget target);
 
+    /**
+     * Console commands that make the next step in stop in code without line info (force step into).
+     */
+    public List<String> getForceStepIntoCommands() {
+        return List.of();
+    }
+
+    /**
+     * Console commands that undo {@link #getForceStepIntoCommands()} once the step has stopped.
+     */
+    public List<String> getForceStepIntoResetCommands() {
+        return List.of();
+    }
+
     @Override
     public List<NativeDebuggerInstallation> findInstallations() {
         return findInPath();

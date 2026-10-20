@@ -61,11 +61,25 @@ public class GdbDapNativeDebuggerProvider extends NativeDapDebuggerProvider {
     @Override
     public List<String> getCommandLine(Path executable, NativeDebugTarget target) {
         List<String> commandLine = new ArrayList<>(List.of(executable.toString(), "-q", "-i=dap"));
+        if (target.stepIntoWithoutSources()) {
+            commandLine.add("-ex");
+            commandLine.add("set step-mode on");
+        }
         for (String command : target.setup().getInitCommands(this)) {
             commandLine.add("-ex");
             commandLine.add(command);
         }
         return commandLine;
+    }
+
+    @Override
+    public List<String> getForceStepIntoCommands() {
+        return List.of("set step-mode on");
+    }
+
+    @Override
+    public List<String> getForceStepIntoResetCommands() {
+        return List.of("set step-mode off");
     }
 
     @Override

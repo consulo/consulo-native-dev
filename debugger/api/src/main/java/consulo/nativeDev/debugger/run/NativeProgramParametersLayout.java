@@ -19,6 +19,7 @@ import consulo.execution.ui.CommonProgramParametersLayout;
 import consulo.nativeDev.debugger.NativeDebuggerProvider;
 import consulo.nativeDev.localize.NativeDevLocalize;
 import consulo.project.Project;
+import consulo.ui.CheckBox;
 import consulo.ui.ComboBox;
 import consulo.ui.annotation.RequiredUIAccess;
 import consulo.ui.ex.dialog.DialogService;
@@ -33,6 +34,7 @@ public class NativeProgramParametersLayout<P extends NativeProgramRunConfigurati
 
     private final Project myProject;
     private final ComboBox<String> myDebugger;
+    private final CheckBox myStepIntoWithoutSources;
 
     @RequiredUIAccess
     public NativeProgramParametersLayout(Project project) {
@@ -44,12 +46,14 @@ public class NativeProgramParametersLayout<P extends NativeProgramRunConfigurati
         project.getApplication().getExtensionPoint(NativeDebuggerProvider.class)
             .forEach(provider -> debugger.add(provider.getId(), provider.getDisplayName()));
         myDebugger = debugger.build();
+        myStepIntoWithoutSources = CheckBox.create(NativeDevLocalize.nativeApplicationStepIntoWithoutSources());
     }
 
     @RequiredUIAccess
     @Override
     protected void addAfter(FormBuilder builder) {
         builder.addLabeled(NativeDevLocalize.nativeApplicationDebuggerLabel(), myDebugger);
+        builder.addBottom(myStepIntoWithoutSources);
     }
 
     @Override
@@ -63,6 +67,7 @@ public class NativeProgramParametersLayout<P extends NativeProgramRunConfigurati
         super.reset(configuration);
         String debugger = configuration.getDebuggerProviderId();
         myDebugger.setValue(debugger == null ? AUTO : debugger);
+        myStepIntoWithoutSources.setValue(configuration.isStepIntoWithoutSources());
     }
 
     @RequiredUIAccess
@@ -71,5 +76,6 @@ public class NativeProgramParametersLayout<P extends NativeProgramRunConfigurati
         super.apply(configuration);
         String debugger = myDebugger.getValue();
         configuration.setDebuggerProviderId(debugger == null || AUTO.equals(debugger) ? null : debugger);
+        configuration.setStepIntoWithoutSources(myStepIntoWithoutSources.getValueOrError());
     }
 }

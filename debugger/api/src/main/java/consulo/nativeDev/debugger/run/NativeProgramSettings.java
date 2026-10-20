@@ -36,6 +36,7 @@ public final class NativeProgramSettings {
     private static final String ATTR_WORKING_DIRECTORY = "working-directory";
     private static final String ATTR_PASS_PARENT_ENVS = "pass-parent-envs";
     private static final String ATTR_DEBUGGER = "debugger";
+    private static final String ATTR_STEP_INTO_WITHOUT_SOURCES = "step-into-without-sources";
     private static final String ELEMENT_ENV = "env";
     private static final String ATTR_ENV_NAME = "name";
     private static final String ATTR_ENV_VALUE = "value";
@@ -45,6 +46,7 @@ public final class NativeProgramSettings {
     private Map<String, String> myEnvs = new LinkedHashMap<>();
     private boolean myPassParentEnvs = true;
     private @Nullable String myDebuggerProviderId;
+    private boolean myStepIntoWithoutSources = true;
 
     public @Nullable String getProgramParameters() {
         return myProgramParameters;
@@ -95,6 +97,14 @@ public final class NativeProgramSettings {
         myDebuggerProviderId = debuggerProviderId;
     }
 
+    public boolean isStepIntoWithoutSources() {
+        return myStepIntoWithoutSources;
+    }
+
+    public void setStepIntoWithoutSources(boolean stepIntoWithoutSources) {
+        myStepIntoWithoutSources = stepIntoWithoutSources;
+    }
+
     public GeneralCommandLine createCommandLine(String executable, @Nullable Path defaultWorkingDirectory) {
         GeneralCommandLine commandLine = new GeneralCommandLine(executable);
         commandLine.addParameters(getProgramArguments());
@@ -114,7 +124,7 @@ public final class NativeProgramSettings {
             getProgramArguments(),
             resolveWorkingDirectory(defaultWorkingDirectory),
             myEnvs,
-            null);
+            null).withStepIntoWithoutSources(myStepIntoWithoutSources);
     }
 
     public NativeProgramSettings copy() {
@@ -124,6 +134,7 @@ public final class NativeProgramSettings {
         copy.myEnvs = new LinkedHashMap<>(myEnvs);
         copy.myPassParentEnvs = myPassParentEnvs;
         copy.myDebuggerProviderId = myDebuggerProviderId;
+        copy.myStepIntoWithoutSources = myStepIntoWithoutSources;
         return copy;
     }
 
@@ -132,6 +143,7 @@ public final class NativeProgramSettings {
         myWorkingDirectory = element.getAttributeValue(ATTR_WORKING_DIRECTORY);
         myPassParentEnvs = !"false".equals(element.getAttributeValue(ATTR_PASS_PARENT_ENVS));
         myDebuggerProviderId = element.getAttributeValue(ATTR_DEBUGGER);
+        myStepIntoWithoutSources = !"false".equals(element.getAttributeValue(ATTR_STEP_INTO_WITHOUT_SOURCES));
         myEnvs = new LinkedHashMap<>();
         for (Element env : element.getChildren(ELEMENT_ENV)) {
             String name = env.getAttributeValue(ATTR_ENV_NAME);
@@ -153,6 +165,9 @@ public final class NativeProgramSettings {
         }
         if (myDebuggerProviderId != null) {
             element.setAttribute(ATTR_DEBUGGER, myDebuggerProviderId);
+        }
+        if (!myStepIntoWithoutSources) {
+            element.setAttribute(ATTR_STEP_INTO_WITHOUT_SOURCES, "false");
         }
         for (Map.Entry<String, String> entry : myEnvs.entrySet()) {
             Element env = new Element(ELEMENT_ENV);

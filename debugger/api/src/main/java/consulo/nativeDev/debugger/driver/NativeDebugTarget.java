@@ -34,7 +34,8 @@ public record NativeDebugTarget(NativeDebugTargetKind kind,
                                 long processId,
                                 @Nullable Path coreFile,
                                 @Nullable String remoteAddress,
-                                NativeDebuggerSetup setup) {
+                                NativeDebuggerSetup setup,
+                                boolean stepIntoWithoutSources) {
     public static NativeDebugTarget launch(Path executable,
                                            List<String> arguments,
                                            @Nullable Path workingDirectory,
@@ -49,19 +50,20 @@ public record NativeDebugTarget(NativeDebugTargetKind kind,
             0,
             null,
             null,
-            NativeDebuggerSetup.EMPTY);
+            NativeDebuggerSetup.EMPTY,
+            false);
     }
 
     public static NativeDebugTarget attach(long processId, @Nullable Path executable) {
-        return new NativeDebugTarget(NativeDebugTargetKind.ATTACH, executable, List.of(), null, Map.of(), null, processId, null, null, NativeDebuggerSetup.EMPTY);
+        return new NativeDebugTarget(NativeDebugTargetKind.ATTACH, executable, List.of(), null, Map.of(), null, processId, null, null, NativeDebuggerSetup.EMPTY, false);
     }
 
     public static NativeDebugTarget core(Path executable, Path coreFile) {
-        return new NativeDebugTarget(NativeDebugTargetKind.CORE, executable, List.of(), null, Map.of(), null, 0, coreFile, null, NativeDebuggerSetup.EMPTY);
+        return new NativeDebugTarget(NativeDebugTargetKind.CORE, executable, List.of(), null, Map.of(), null, 0, coreFile, null, NativeDebuggerSetup.EMPTY, false);
     }
 
     public static NativeDebugTarget remote(@Nullable Path executable, String address) {
-        return new NativeDebugTarget(NativeDebugTargetKind.REMOTE, executable, List.of(), null, Map.of(), null, 0, null, address, NativeDebuggerSetup.EMPTY);
+        return new NativeDebugTarget(NativeDebugTargetKind.REMOTE, executable, List.of(), null, Map.of(), null, 0, null, address, NativeDebuggerSetup.EMPTY, false);
     }
 
     public NativeDebugTarget withSetup(NativeDebuggerSetup setup) {
@@ -74,6 +76,24 @@ public record NativeDebugTarget(NativeDebugTargetKind kind,
             processId,
             coreFile,
             remoteAddress,
-            setup);
+            setup,
+            stepIntoWithoutSources);
+    }
+
+    /**
+     * Stepping in stops in code without line info, so the debugger shows its disassembly instead of skipping it.
+     */
+    public NativeDebugTarget withStepIntoWithoutSources(boolean stepIntoWithoutSources) {
+        return new NativeDebugTarget(kind,
+            executable,
+            arguments,
+            workingDirectory,
+            environment,
+            terminal,
+            processId,
+            coreFile,
+            remoteAddress,
+            setup,
+            stepIntoWithoutSources);
     }
 }

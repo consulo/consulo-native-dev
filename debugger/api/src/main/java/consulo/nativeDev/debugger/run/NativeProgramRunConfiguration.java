@@ -76,4 +76,12 @@ public interface NativeProgramRunConfiguration extends CommonProgramRunConfigura
     default void setDebuggerProviderId(@Nullable String debuggerProviderId) {
         getProgramSettings().setDebuggerProviderId(debuggerProviderId);
     }
+
+    default boolean isStepIntoWithoutSources() {
+        return getProgramSettings().isStepIntoWithoutSources();
+    }
+
+    default void setStepIntoWithoutSources(boolean stepIntoWithoutSources) {
+        getProgramSettings().setStepIntoWithoutSources(stepIntoWithoutSources);
+    }
 }

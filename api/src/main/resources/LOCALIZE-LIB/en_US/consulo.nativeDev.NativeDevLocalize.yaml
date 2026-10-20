@@ -6,6 +6,8 @@ native.application.debugger.auto:
     text: Auto
 native.application.debugger.label:
     text: 'Debugger:'
+native.application.step.into.without.sources:
+    text: Step into code without sources (show disassembly)
 native.application.executable.dialog.title:
     text: Select Executable
 native.application.executable.label:

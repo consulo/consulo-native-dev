@@ -19,6 +19,7 @@ import consulo.execution.debug.XDebugSession;
 import consulo.execution.debug.breakpoint.XLineBreakpointType;
 import consulo.execution.debug.evaluation.XDebuggerEditorsProvider;
 import consulo.execution.debug.frame.XStackFrame;
+import consulo.execution.debug.frame.XSuspendContext;
 import consulo.execution.debugger.dap.DAPDebugProcess;
 import consulo.execution.debugger.dap.DAPStackFrame;
 import consulo.execution.debugger.dap.protocol.Capabilities;
@@ -29,6 +30,7 @@ import consulo.execution.debugger.dap.protocol.DisassembledInstruction;
 import consulo.execution.debugger.dap.protocol.EvaluateArguments;
 import consulo.execution.debugger.dap.protocol.EvaluateContext;
 import consulo.execution.debugger.dap.protocol.ReadMemoryArguments;
+import consulo.execution.debugger.dap.protocol.event.StoppedEvent;
 import consulo.execution.debugger.dap.value.DAPValuePresentation;
 import consulo.execution.ui.console.ConsoleViewContentType;
 import consulo.nativeDev.debugger.NativeDebugProcess;
@@ -73,6 +75,7 @@ public class NativeDapDebugProcess extends DAPDebugProcess implements NativeDebu
     private final NativeDapDebuggerProvider myProvider;
 
     private volatile @Nullable ProcessHandler myAdapterHandler;
+    private volatile boolean myForceStepIntoActive;
 
     public NativeDapDebugProcess(XDebugSession session,
                                  NativeDebugTarget target,
@@ -150,6 +153,36 @@ public class NativeDapDebugProcess extends DAPDebugProcess implements NativeDebu
         if (handler != null && !handler.waitFor(ADAPTER_EXIT_TIMEOUT_MS)) {
             handler.destroyProcess();
         }
+    }
+
+    @Override
+    public void startForceStepInto(@Nullable XSuspendContext context) {
+        List<String> commands = myProvider.getForceStepIntoCommands();
+        if (commands.isEmpty() || myTarget.stepIntoWithoutSources()) {
+            super.startForceStepInto(context);
+            return;
+        }
+        myForceStepIntoActive = true;
+        executeCommands(commands).whenComplete((o, error) -> super.startForceStepInto(context));
+    }
+
+    @Override
+    protected void onStopped(StoppedEvent event) {
+        if (!myForceStepIntoActive) {
+            super.onStopped(event);
+            return;
+        }
+        myForceStepIntoActive = false;
+        executeCommands(myProvider.getForceStepIntoResetCommands()).whenComplete((o, error) -> super.onStopped(event));
+    }
+
+    private CompletableFuture<?> executeCommands(List<String> commands) {
+        CompletableFuture<?> chain = CompletableFuture.completedFuture(null);
+        for (String command : commands) {
+            // no frame: the reset runs after the stop, when the old frame ids are already invalid
+            chain = chain.thenCompose(o -> getDAP().evaluate(new EvaluateArguments(command, null, EvaluateContext.REPL)));
+        }
+        return chain;
     }
 
     @Override
