@@ -16,72 +16,89 @@
 package consulo.nativeDev.debugger.run;
 
 import consulo.execution.CommonProgramRunConfigurationParameters;
+import consulo.execution.configuration.LegacyRunConfigurationConverter;
+import consulo.execution.configuration.fragment.EnvironmentFragmentState;
+import consulo.execution.configuration.fragment.ProgramParametersFragmentState;
+import consulo.execution.configuration.fragment.WorkingDirectoryFragmentState;
 import consulo.nativeDev.debugger.NativeDebuggableRunProfile;
+import consulo.nativeDev.debugger.driver.NativeDebugTarget;
+import consulo.process.cmd.GeneralCommandLine;
+import consulo.process.cmd.ParametersListUtil;
+import consulo.util.lang.StringUtil;
 import org.jspecify.annotations.Nullable;
 
-import java.util.Map;
+import java.nio.file.Path;
+import java.util.List;
 
 /**
+ * A configuration starting a native program: program parameters, working directory and environment come from the shared
+ * fragments, the debugger from {@link NativeDebuggerFragmentState}.
+ *
  * @author VISTALL
  * @since 2026-10-10
  */
 public interface NativeProgramRunConfiguration extends CommonProgramRunConfigurationParameters, NativeDebuggableRunProfile {
-    NativeProgramSettings getProgramSettings();
-
-    @Override
-    default void setProgramParameters(@Nullable String value) {
-        getProgramSettings().setProgramParameters(value);
-    }
-
-    @Override
-    default @Nullable String getProgramParameters() {
-        return getProgramSettings().getProgramParameters();
-    }
-
-    @Override
-    default void setWorkingDirectory(@Nullable String value) {
-        getProgramSettings().setWorkingDirectory(value);
-    }
-
-    @Override
-    default @Nullable String getWorkingDirectory() {
-        return getProgramSettings().getWorkingDirectory();
-    }
-
-    @Override
-    default void setEnvs(Map<String, String> envs) {
-        getProgramSettings().setEnvs(envs);
-    }
-
-    @Override
-    default Map<String, String> getEnvs() {
-        return getProgramSettings().getEnvs();
-    }
-
-    @Override
-    default void setPassParentEnvs(boolean passParentEnvs) {
-        getProgramSettings().setPassParentEnvs(passParentEnvs);
-    }
-
-    @Override
-    default boolean isPassParentEnvs() {
-        return getProgramSettings().isPassParentEnvs();
+    /**
+     * Converts the program attributes of an old configuration element; call from {@code convertLegacyState}.
+     */
+    static void convertLegacyProgramState(LegacyRunConfigurationConverter converter) {
+        NativeProgramLegacyState old = converter.readXml(NativeProgramLegacyState.class);
+        converter.addFragment(new ProgramParametersFragmentState(old.PARAMETERS));
+        converter.addFragment(new WorkingDirectoryFragmentState(old.WORKING_DIRECTORY));
+        converter.addFragment(new EnvironmentFragmentState(converter.readEnvs(), old.PASS_PARENT_ENVS));
+        if (old.DEBUGGER != null || !old.STEP_INTO_WITHOUT_SOURCES) {
+            converter.addFragment(new NativeDebuggerFragmentState(old.DEBUGGER, old.STEP_INTO_WITHOUT_SOURCES));
+        }
     }
 
     @Override
     default @Nullable String getDebuggerProviderId() {
-        return getProgramSettings().getDebuggerProviderId();
+        return getFragmentState(NativeDebuggerFragmentState.class).getDebuggerProviderId();
     }
 
     default void setDebuggerProviderId(@Nullable String debuggerProviderId) {
-        getProgramSettings().setDebuggerProviderId(debuggerProviderId);
+        getFragmentState(NativeDebuggerFragmentState.class).setDebuggerProviderId(debuggerProviderId);
     }
 
     default boolean isStepIntoWithoutSources() {
-        return getProgramSettings().isStepIntoWithoutSources();
+        return getFragmentState(NativeDebuggerFragmentState.class).isStepIntoWithoutSources();
     }
 
     default void setStepIntoWithoutSources(boolean stepIntoWithoutSources) {
-        getProgramSettings().setStepIntoWithoutSources(stepIntoWithoutSources);
+        getFragmentState(NativeDebuggerFragmentState.class).setStepIntoWithoutSources(stepIntoWithoutSources);
+    }
+
+    default List<String> getProgramArguments() {
+        return ParametersListUtil.parse(StringUtil.notNullize(getProgramParameters()));
+    }
+
+    /**
+     * The working directory of the program, {@code defaultWorkingDirectory} when none is set.
+     */
+    default @Nullable Path resolveWorkingDirectory(@Nullable Path defaultWorkingDirectory) {
+        String workingDirectory = getWorkingDirectory();
+        return StringUtil.isEmptyOrSpaces(workingDirectory) ? defaultWorkingDirectory : Path.of(workingDirectory);
+    }
+
+    default GeneralCommandLine createCommandLine(String executable, @Nullable Path defaultWorkingDirectory) {
+        GeneralCommandLine commandLine = new GeneralCommandLine(executable);
+        commandLine.addParameters(getProgramArguments());
+        Path workingDirectory = resolveWorkingDirectory(defaultWorkingDirectory);
+        if (workingDirectory != null) {
+            commandLine.withWorkDirectory(workingDirectory.toString());
+        }
+        commandLine.withEnvironment(getEnvs());
+        commandLine.withParentEnvironmentType(isPassParentEnvs()
+            ? GeneralCommandLine.ParentEnvironmentType.CONSOLE
+            : GeneralCommandLine.ParentEnvironmentType.NONE);
+        return commandLine;
+    }
+
+    default NativeDebugTarget createDebugTarget(Path executable, @Nullable Path defaultWorkingDirectory) {
+        return NativeDebugTarget.launch(executable,
+            getProgramArguments(),
+            resolveWorkingDirectory(defaultWorkingDirectory),
+            getEnvs(),
+            null).withStepIntoWithoutSources(isStepIntoWithoutSources());
     }
 }

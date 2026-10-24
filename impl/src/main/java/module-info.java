@@ -32,4 +32,5 @@ module consulo.nativeDev.impl {
     requires consulo.virtual.file.system.api;
     requires consulo.logging.api;
 
+    opens consulo.nativeDev.impl.run to consulo.util.xml.serializer, consulo.execution.api;
 }

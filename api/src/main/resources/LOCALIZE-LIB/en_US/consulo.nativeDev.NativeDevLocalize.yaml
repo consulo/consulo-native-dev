@@ -6,14 +6,20 @@ native.application.debugger.auto:
     text: Auto
 native.application.debugger.label:
     text: 'Debugger:'
-native.application.step.into.without.sources:
-    text: Step into code without sources (show disassembly)
 native.application.executable.dialog.title:
     text: Select Executable
 native.application.executable.label:
     text: 'Executable:'
 native.application.executable.not.specified:
     text: Executable is not specified
+native.application.fragment.debugger:
+    text: Specify debugger
+native.application.fragment.no.step.into.without.sources:
+    text: Do not step into code without sources
+native.application.fragment.group.debugger:
+    text: Native Debugger
+native.application.fragment.executable:
+    text: Executable
 native.debugger.does.not.support.disassembly:
     text: '{0} does not support disassembly'
 native.debugger.does.not.support.memory:

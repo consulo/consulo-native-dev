@@ -17,16 +17,15 @@ package consulo.nativeDev.impl.run;
 
 import consulo.execution.configuration.CommandLineState;
 import consulo.execution.configuration.ConfigurationFactory;
-import consulo.execution.configuration.RunConfiguration;
+import consulo.execution.configuration.LegacyRunConfigurationConverter;
 import consulo.execution.configuration.RunConfigurationBase;
 import consulo.execution.configuration.RunProfileState;
 import consulo.execution.configuration.RuntimeConfigurationError;
-import consulo.execution.configuration.ui.SettingsEditor;
+import consulo.execution.configuration.fragment.RunConfigurationFragment;
 import consulo.execution.executor.Executor;
 import consulo.execution.runner.ExecutionEnvironment;
 import consulo.nativeDev.debugger.driver.NativeDebugTarget;
 import consulo.nativeDev.debugger.run.NativeProgramRunConfiguration;
-import consulo.nativeDev.debugger.run.NativeProgramSettings;
 import consulo.nativeDev.localize.NativeDevLocalize;
 import consulo.nativeDev.profiler.NativeProfilableRunProfile;
 import consulo.process.ExecutionException;
@@ -35,12 +34,10 @@ import consulo.process.ProcessHandlerBuilderFactory;
 import consulo.process.cmd.GeneralCommandLine;
 import consulo.project.Project;
 import consulo.util.lang.StringUtil;
-import consulo.util.xml.serializer.InvalidDataException;
-import consulo.util.xml.serializer.WriteExternalException;
-import org.jdom.Element;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * @author VISTALL
@@ -48,34 +45,45 @@ import java.nio.file.Path;
  */
 public class NativeApplicationConfiguration extends RunConfigurationBase
     implements NativeProgramRunConfiguration, NativeProfilableRunProfile {
-    private String myExecutablePath = "";
-    private NativeProgramSettings myProgramSettings = new NativeProgramSettings();
-
     public NativeApplicationConfiguration(Project project, ConfigurationFactory factory, String name) {
         super(project, factory, name);
     }
 
+    @Override
+    protected Class<NativeApplicationConfigurationOptions> getOptionsClass() {
+        return NativeApplicationConfigurationOptions.class;
+    }
+
+    @Override
+    public NativeApplicationConfigurationOptions getOptions() {
+        return (NativeApplicationConfigurationOptions) super.getOptions();
+    }
+
+    @Override
+    protected void convertLegacyState(LegacyRunConfigurationConverter converter) {
+        NativeApplicationConfigurationOptions options = new NativeApplicationConfigurationOptions();
+        options.setExecutable(converter.getElement().getAttributeValue("executable"));
+        converter.setOptions(options);
+
+        NativeProgramRunConfiguration.convertLegacyProgramState(converter);
+    }
+
+    @Override
+    public List<RunConfigurationFragment<?>> createFragments() {
+        return List.of(new NativeApplicationExecutableFragment());
+    }
+
     public String getExecutablePath() {
-        return myExecutablePath;
+        return StringUtil.notNullize(getOptions().getExecutable());
     }
 
     public void setExecutablePath(String executablePath) {
-        myExecutablePath = executablePath;
-    }
-
-    @Override
-    public NativeProgramSettings getProgramSettings() {
-        return myProgramSettings;
-    }
-
-    @Override
-    public SettingsEditor<? extends RunConfiguration> getConfigurationEditor() {
-        return new NativeApplicationConfigurationEditor(getProject());
+        getOptions().setExecutable(executablePath);
     }
 
     @Override
     public void checkConfiguration() throws RuntimeConfigurationError {
-        if (StringUtil.isEmptyOrSpaces(myExecutablePath)) {
+        if (StringUtil.isEmptyOrSpaces(getExecutablePath())) {
             throw new RuntimeConfigurationError(NativeDevLocalize.nativeApplicationExecutableNotSpecified());
         }
     }
@@ -95,35 +103,15 @@ public class NativeApplicationConfiguration extends RunConfigurationBase
     }
 
     public GeneralCommandLine createCommandLine() {
-        return myProgramSettings.createCommandLine(myExecutablePath, null);
+        return createCommandLine(getExecutablePath(), null);
     }
 
     @Override
     public NativeDebugTarget createDebugTarget(ExecutionEnvironment environment) throws ExecutionException {
-        if (StringUtil.isEmptyOrSpaces(myExecutablePath)) {
+        String executablePath = getExecutablePath();
+        if (StringUtil.isEmptyOrSpaces(executablePath)) {
             throw new ExecutionException(NativeDevLocalize.nativeApplicationExecutableNotSpecified().get());
         }
-        return myProgramSettings.createDebugTarget(Path.of(myExecutablePath), null);
-    }
-
-    @Override
-    public RunConfiguration clone() {
-        NativeApplicationConfiguration clone = (NativeApplicationConfiguration) super.clone();
-        clone.myProgramSettings = myProgramSettings.copy();
-        return clone;
-    }
-
-    @Override
-    public void readExternal(Element element) throws InvalidDataException {
-        super.readExternal(element);
-        myExecutablePath = StringUtil.notNullize(element.getAttributeValue("executable"));
-        myProgramSettings.readExternal(element);
-    }
-
-    @Override
-    public void writeExternal(Element element) throws WriteExternalException {
-        super.writeExternal(element);
-        element.setAttribute("executable", myExecutablePath);
-        myProgramSettings.writeExternal(element);
+        return createDebugTarget(Path.of(executablePath), null);
     }
 }
