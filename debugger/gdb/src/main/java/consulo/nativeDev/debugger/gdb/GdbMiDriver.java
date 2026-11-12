@@ -89,6 +89,7 @@ public class GdbMiDriver implements NativeDebuggerDriver {
 
     private final ProcessHandlerBuilderFactory myProcessHandlerBuilderFactory;
     private final Path myGdbExecutable;
+    private final consulo.platform.Platform myPlatform;
     private final List<String> myArguments;
     private final NativeDebuggerListener myListener;
     private final Executor myEventExecutor;
@@ -116,6 +117,19 @@ public class GdbMiDriver implements NativeDebuggerDriver {
                        List<String> arguments,
                        NativeDebuggerListener listener,
                        Executor eventExecutor) {
+        this(processHandlerBuilderFactory, gdbExecutable, arguments, listener, eventExecutor, consulo.platform.Platform.current());
+    }
+
+    /**
+     * @param platform the machine gdb runs on - the one the debugged program lives on
+     */
+    public GdbMiDriver(ProcessHandlerBuilderFactory processHandlerBuilderFactory,
+                       Path gdbExecutable,
+                       List<String> arguments,
+                       NativeDebuggerListener listener,
+                       Executor eventExecutor,
+                       consulo.platform.Platform platform) {
+        myPlatform = platform;
         myProcessHandlerBuilderFactory = processHandlerBuilderFactory;
         myGdbExecutable = gdbExecutable;
         myArguments = List.copyOf(arguments);
@@ -527,7 +541,9 @@ public class GdbMiDriver implements NativeDebuggerDriver {
         GeneralCommandLine commandLine = new GeneralCommandLine(myGdbExecutable.toString(), "-q", "--interpreter=mi")
             .withParameters(myArguments)
             .withCharset(StandardCharsets.UTF_8)
-            .withRedirectErrorStream(true);
+            .withRedirectErrorStream(true)
+            // gdb runs on the machine the program lives on
+            .withPlatform(myPlatform);
         ProcessHandler handler = myProcessHandlerBuilderFactory.newBuilder(commandLine).blockingReader().build();
         OutputStream processInput = handler.getProcessInput();
         if (processInput == null) {
@@ -617,7 +633,8 @@ public class GdbMiDriver implements NativeDebuggerDriver {
 
         switch (target.kind()) {
             case LAUNCH -> {
-                boolean windows = Platform.local() == Platform.Windows_x86;
+                // arguments are quoted for the machine gdb runs on
+                boolean windows = myPlatform.os().isWindows();
                 String arguments = GdbMiQuoteUtil.programArguments(target.arguments(), windows);
                 if (target.terminal() == null && !windows) {
                     arguments = arguments.isEmpty() ? "< /dev/null" : arguments + " < /dev/null";

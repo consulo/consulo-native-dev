@@ -60,8 +60,8 @@ public class CodeLldbNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public int getPriority() {
-        return Platform.current().os().isMac() ? 90 : 60;
+    public int getPriority(Platform platform) {
+        return platform.os().isMac() ? 90 : 60;
     }
 
     @Override
@@ -70,24 +70,24 @@ public class CodeLldbNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public List<NativeDebuggerInstallation> findInstallations() {
-        boolean windows = Platform.current().os().isWindows();
+    public List<NativeDebuggerInstallation> findInstallations(Platform platform) {
+        boolean windows = platform.os().isWindows();
         String adapterName = windows ? "codelldb.exe" : "codelldb";
 
         Set<Path> adapters = new LinkedHashSet<>();
-        for (NativeDebuggerInstallation installation : super.findInstallations()) {
+        for (NativeDebuggerInstallation installation : super.findInstallations(platform)) {
             adapters.add(realPath(installation.executable()));
         }
         if (!windows) {
             for (String adapter : SYSTEM_ADAPTERS) {
-                Path path = Path.of(adapter);
+                Path path = platform.fs().getPath(adapter);
                 if (Files.isExecutable(path)) {
                     adapters.add(realPath(path));
                 }
             }
         }
 
-        Path home = Platform.current().user().homePath();
+        Path home = platform.user().homePath();
         for (String directory : EXTENSION_DIRECTORIES) {
             Path extensions = home.resolve(directory);
             if (!Files.isDirectory(extensions)) {
@@ -117,7 +117,7 @@ public class CodeLldbNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public Map<String, Object> createLaunchArguments(NativeDebugTarget target) {
+    public Map<String, Object> createLaunchArguments(NativeDebugTarget target, Platform platform) {
         Map<String, Object> arguments = new LinkedHashMap<>();
         Path executable = target.executable();
         if (executable != null) {

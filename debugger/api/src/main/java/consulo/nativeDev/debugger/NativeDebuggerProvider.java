@@ -15,6 +15,7 @@
  */
 package consulo.nativeDev.debugger;
 
+import consulo.platform.Platform;
 import consulo.annotation.component.ComponentScope;
 import consulo.annotation.component.ExtensionAPI;
 import consulo.execution.debug.XDebugProcess;
@@ -54,11 +55,18 @@ public interface NativeDebuggerProvider {
 
     LocalizeValue getDisplayName();
 
-    default int getPriority() {
+    /**
+     * The priority on {@code platform} - the machine the debugger runs on, the local one or a remote one alike.
+     */
+    default int getPriority(Platform platform) {
         return 0;
     }
 
-    List<NativeDebuggerInstallation> findInstallations();
+    /**
+     * The installations on {@code platform} - the machine the project lives on, where the debugger has to run. Looked up
+     * through the platform - its PATH, its home, its file system - the same way for the local machine and a remote one.
+     */
+    List<NativeDebuggerInstallation> findInstallations(Platform platform);
 
     XDebugProcess createProcess(XDebugSession session, NativeDebugTarget target, NativeDebuggerInstallation installation)
         throws ExecutionException;

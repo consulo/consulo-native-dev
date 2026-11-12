@@ -94,12 +94,21 @@ public class NativeDapDebugProcess extends DAPDebugProcess implements NativeDebu
 
     @Override
     protected DAP createDAP(DAPFactory factory) {
-        GeneralCommandLine commandLine = new GeneralCommandLine(myProvider.getCommandLine(myInstallation.executable(), myTarget))
+        Path executable;
+        try {
+            executable = myProvider.prepareExecutable(myInstallation, getSession().getProject().getPlatform());
+        }
+        catch (java.io.IOException e) {
+            throw new NativeDebuggerException("Failed to prepare " + myInstallation.executable() + ": " + e.getMessage(), e);
+        }
+        GeneralCommandLine commandLine = new GeneralCommandLine(myProvider.getCommandLine(executable, myTarget))
             .withCharset(StandardCharsets.UTF_8);
         Path workingDirectory = myTarget.workingDirectory();
         if (workingDirectory != null) {
-            commandLine.withWorkDirectory(workingDirectory.toFile());
+            commandLine.withWorkingDirectory(workingDirectory);
         }
+        // the adapter runs on the machine of the project, next to the debuggee - its stdio is the protocol stream
+        commandLine.withPlatform(getSession().getProject().getPlatform());
         ProcessHandler handler;
         try {
             handler = getSession().getProject().getApplication().getInstance(ProcessHandlerBuilderFactory.class)
@@ -129,7 +138,7 @@ public class NativeDapDebugProcess extends DAPDebugProcess implements NativeDebu
 
     @Override
     protected CompletableFuture<?> startDebuggee(DAP dap) {
-        return dap.request("launch", myProvider.createLaunchArguments(myTarget), Object.class);
+        return dap.request("launch", myProvider.createLaunchArguments(myTarget, getSession().getProject().getPlatform()), Object.class);
     }
 
     @Override

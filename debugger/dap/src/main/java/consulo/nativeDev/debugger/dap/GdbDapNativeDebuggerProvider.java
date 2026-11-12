@@ -15,6 +15,7 @@
  */
 package consulo.nativeDev.debugger.dap;
 
+import consulo.platform.Platform;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.localize.LocalizeValue;
 import consulo.nativeDev.debugger.driver.NativeDebugTarget;
@@ -49,7 +50,7 @@ public class GdbDapNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public int getPriority() {
+    public int getPriority(Platform platform) {
         return 10;
     }
 
@@ -83,7 +84,7 @@ public class GdbDapNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public Map<String, Object> createLaunchArguments(NativeDebugTarget target) {
+    public Map<String, Object> createLaunchArguments(NativeDebugTarget target, Platform platform) {
         Map<String, Object> arguments = new LinkedHashMap<>();
         Path executable = target.executable();
         if (executable != null) {

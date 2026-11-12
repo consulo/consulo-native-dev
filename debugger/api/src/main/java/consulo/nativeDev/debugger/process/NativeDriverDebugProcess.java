@@ -15,6 +15,9 @@
  */
 package consulo.nativeDev.debugger.process;
 
+import java.nio.file.Path;
+import consulo.virtualFileSystem.VirtualFile;
+import consulo.virtualFileSystem.VirtualFileManager;
 import consulo.application.ReadAction;
 import consulo.execution.debug.XDebugProcess;
 import consulo.execution.debug.XDebugSession;
@@ -258,7 +261,7 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
 
     @Override
     public void runToPosition(XSourcePosition position, @Nullable XSuspendContext context) {
-        report(myDriver.runToLocation(position.getFile().getPath(), position.getLine() + 1));
+        report(myDriver.runToLocation(debuggerPath(position.getFile()), position.getLine() + 1));
     }
 
     @Override
@@ -277,8 +280,18 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
         return result;
     }
 
+    /**
+     * The path the debugger knows the file by - a path of the machine it runs on, which for a project on a remote platform
+     * is not the virtual file path.
+     */
+    private static String debuggerPath(VirtualFile file) {
+        Path path = file.getFileSystem().getNioPath(file);
+        return path != null ? path.toString() : file.getPath();
+    }
+
     void registerBreakpoint(XLineBreakpoint<XBreakpointProperties> breakpoint) {
-        String path = VirtualFileUtil.urlToPath(breakpoint.getFileUrl());
+        VirtualFile breakpointFile = VirtualFileManager.getInstance().findFileByUrl(breakpoint.getFileUrl());
+        String path = breakpointFile != null ? debuggerPath(breakpointFile) : VirtualFileUtil.urlToPath(breakpoint.getFileUrl());
         XExpression condition = breakpoint.getConditionExpression();
         NativeBreakpointRequest request = NativeBreakpointRequest.line(path, breakpoint.getLine() + 1)
             .withCondition(condition == null ? null : condition.getExpression())

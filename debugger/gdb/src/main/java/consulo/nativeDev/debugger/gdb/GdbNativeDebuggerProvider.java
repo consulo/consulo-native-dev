@@ -15,6 +15,7 @@
  */
 package consulo.nativeDev.debugger.gdb;
 
+import java.nio.file.Path;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.application.concurrent.ApplicationConcurrency;
 import consulo.execution.debug.XDebugProcess;
@@ -25,11 +26,9 @@ import consulo.nativeDev.debugger.NativeDebuggerProvider;
 import consulo.nativeDev.debugger.driver.NativeDebugTarget;
 import consulo.nativeDev.debugger.process.NativeDriverDebugProcess;
 import consulo.platform.Platform;
-import consulo.process.PathEnvironmentVariableUtil;
 import consulo.process.ProcessHandlerBuilderFactory;
 import jakarta.inject.Inject;
 
-import java.io.File;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
@@ -61,23 +60,28 @@ public class GdbNativeDebuggerProvider implements NativeDebuggerProvider {
     }
 
     @Override
-    public int getPriority() {
-        return Platform.current().os().isMac() ? 10 : 100;
+    public int getPriority(Platform platform) {
+        return platform.os().isMac() ? 10 : 100;
     }
 
+    /**
+     * The gdb in the PATH of {@code platform} - the machine the project and its program live on.
+     */
     @Override
-    public List<NativeDebuggerInstallation> findInstallations() {
-        File gdb = PathEnvironmentVariableUtil.findInPath(Platform.current().os().isWindows() ? "gdb.exe" : "gdb");
-        return gdb == null ? List.of() : List.of(new NativeDebuggerInstallation(ID, gdb.toPath()));
+    public List<NativeDebuggerInstallation> findInstallations(Platform platform) {
+        Path gdb = platform.findExecutableInPath("gdb");
+        return gdb == null ? List.of() : List.of(new NativeDebuggerInstallation(ID, gdb));
     }
 
     @Override
     public XDebugProcess createProcess(XDebugSession session, NativeDebugTarget target, NativeDebuggerInstallation installation) {
+        // gdb runs where the project and its program live
+        Platform platform = session.getProject().getPlatform();
         ExecutorService executor = myConcurrency.createBoundedApplicationPoolExecutor("GDB", myConcurrency.getExecutorService(), 1);
         return new NativeDriverDebugProcess(session,
             target,
             this,
             executor,
-            listener -> new GdbMiDriver(myProcessHandlerBuilderFactory, installation.executable(), List.of(), listener, executor));
+            listener -> new GdbMiDriver(myProcessHandlerBuilderFactory, installation.executable(), List.of(), listener, executor, platform));
     }
 }

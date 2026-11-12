@@ -15,6 +15,7 @@
  */
 package consulo.nativeDev.impl.debugger;
 
+import consulo.platform.Platform;
 import consulo.annotation.component.ServiceImpl;
 import consulo.application.Application;
 import consulo.execution.debug.XDebugProcess;
@@ -61,8 +62,9 @@ public class NativeDebugSessionStarterImpl implements NativeDebugSessionStarter 
         throws ExecutionException {
         List<NativeDebuggerProvider> providers = new ArrayList<>();
         myApplication.getExtensionPoint(NativeDebuggerProvider.class).forEach(providers::add);
-        providers.sort(Comparator.comparingInt(NativeDebuggerProvider::getPriority).reversed());
-
+        // the debugger runs on the machine the project lives on
+        Platform platform = environment.getProject().getPlatform();
+        providers.sort(Comparator.comparingInt((NativeDebuggerProvider provider) -> provider.getPriority(platform)).reversed());
         NativeDebuggerProvider debuggerProvider = null;
         NativeDebuggerInstallation debuggerInstallation = null;
         if (debuggerProviderId == null) {
@@ -83,7 +85,7 @@ public class NativeDebugSessionStarterImpl implements NativeDebugSessionStarter 
             if (debuggerProviderId != null && !debuggerProviderId.equals(candidate.getId())) {
                 continue;
             }
-            List<NativeDebuggerInstallation> installations = findInstallations(candidate);
+            List<NativeDebuggerInstallation> installations = findInstallations(candidate, platform);
             if (!installations.isEmpty()) {
                 debuggerProvider = candidate;
                 debuggerInstallation = installations.get(0);
@@ -122,9 +124,9 @@ public class NativeDebugSessionStarterImpl implements NativeDebugSessionStarter 
         return null;
     }
 
-    private static List<NativeDebuggerInstallation> findInstallations(NativeDebuggerProvider provider) {
+    private static List<NativeDebuggerInstallation> findInstallations(NativeDebuggerProvider provider, Platform platform) {
         try {
-            return provider.findInstallations();
+            return provider.findInstallations(platform);
         }
         catch (RuntimeException e) {
             LOG.error("Native debugger provider failed: " + provider.getId(), e);

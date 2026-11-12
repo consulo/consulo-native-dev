@@ -32,6 +32,7 @@ import java.util.Map;
  */
 @ExtensionImpl
 public class CppdbgNativeDebuggerProvider extends NativeDapDebuggerProvider {
+
     public static final String ID = "cppdbg";
 
     @Override
@@ -45,16 +46,19 @@ public class CppdbgNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public int getPriority() {
+    public int getPriority(Platform platform) {
         return 110;
     }
 
+    /**
+     * DbgEng exists on windows only - a cppdbg of the PATH or the one bundled with the IDE.
+     */
     @Override
-    public List<NativeDebuggerInstallation> findInstallations() {
-        if (!Platform.current().os().isWindows()) {
+    public List<NativeDebuggerInstallation> findInstallations(Platform platform) {
+        if (!platform.os().isWindows()) {
             return List.of();
         }
-        return findInstallations("cppdbg.path", "cppdbg");
+        return findInstallations(platform, "cppdbg.path", "cppdbg");
     }
 
     @Override
@@ -68,7 +72,7 @@ public class CppdbgNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public Map<String, Object> createLaunchArguments(NativeDebugTarget target) {
+    public Map<String, Object> createLaunchArguments(NativeDebugTarget target, Platform platform) {
         Map<String, Object> arguments = new LinkedHashMap<>();
         Path executable = target.executable();
         if (executable != null) {

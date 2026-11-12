@@ -19,6 +19,12 @@ import consulo.annotation.component.ExtensionImpl;
 import consulo.localize.LocalizeValue;
 import consulo.nativeDev.debugger.driver.NativeDebugTarget;
 import consulo.platform.Platform;
+import org.jspecify.annotations.Nullable;
+import consulo.process.util.ProcessOutput;
+import consulo.process.util.CapturingProcessUtil;
+import consulo.process.cmd.GeneralCommandLine;
+import consulo.process.ExecutionException;
+import consulo.nativeDev.debugger.NativeDebuggerInstallation;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -53,8 +59,8 @@ public class LldbDapNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public int getPriority() {
-        return Platform.current().os().isMac() ? 100 : 50;
+    public int getPriority(Platform platform) {
+        return platform.os().isMac() ? 100 : 50;
     }
 
     @Override
@@ -77,7 +83,35 @@ public class LldbDapNativeDebuggerProvider extends NativeDapDebuggerProvider {
     }
 
     @Override
-    public Map<String, Object> createLaunchArguments(NativeDebugTarget target) {
+    public List<NativeDebuggerInstallation> findInstallations(Platform platform) {
+        List<NativeDebuggerInstallation> installations = new ArrayList<>(super.findInstallations(platform));
+        if (installations.isEmpty() && platform.os().isMac()) {
+            // Xcode keeps lldb-dap out of the PATH - xcrun knows where it is
+            Path xcrunFound = findWithXcrun(platform);
+            if (xcrunFound != null) {
+                installations.add(new NativeDebuggerInstallation(getId(), xcrunFound));
+            }
+        }
+        return installations;
+    }
+
+    private static @Nullable Path findWithXcrun(Platform platform) {
+        try {
+            GeneralCommandLine commandLine = new GeneralCommandLine("xcrun", "--find", "lldb-dap").withPlatform(platform);
+            ProcessOutput output = CapturingProcessUtil.execAndGetOutput(commandLine, 10_000);
+            if (output.getExitCode() != 0) {
+                return null;
+            }
+            String path = output.getStdout().trim();
+            return path.isEmpty() ? null : platform.fs().getPath(path);
+        }
+        catch (ExecutionException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public Map<String, Object> createLaunchArguments(NativeDebugTarget target, Platform platform) {
         Map<String, Object> arguments = new LinkedHashMap<>();
         Path executable = target.executable();
         if (executable != null) {
@@ -88,7 +122,8 @@ public class LldbDapNativeDebuggerProvider extends NativeDapDebuggerProvider {
         if (workingDirectory != null) {
             arguments.put("cwd", workingDirectory.toString());
         }
-        Map<String, String> environment = new LinkedHashMap<>(Platform.current().os().environmentVariables());
+        // the environment of the machine the debuggee runs on
+        Map<String, String> environment = new LinkedHashMap<>(platform.os().environmentVariables());
         environment.putAll(target.environment());
         List<String> env = new ArrayList<>(environment.size());
         for (Map.Entry<String, String> entry : environment.entrySet()) {

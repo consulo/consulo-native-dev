@@ -15,6 +15,7 @@
  */
 package consulo.nativeDev.debugger.process;
 
+import consulo.virtualFileSystem.VirtualFileManager;
 import consulo.application.Application;
 import consulo.application.ReadAction;
 import consulo.execution.debug.XSourcePosition;
@@ -124,7 +125,9 @@ class NativeStackFrame extends XStackFrame {
             return null;
         }
         return ReadAction.compute(() -> {
-            VirtualFile file = LocalFileSystem.getInstance().findFileByPath(path);
+            // a path of the machine the debugger runs on - the project's
+            VirtualFile file = VirtualFileManager.getInstance().findFileByNioPath(
+                myProcess.getSession().getProject().getPlatform().fs().getPath(path));
             if (file == null) {
                 return null;
             }
