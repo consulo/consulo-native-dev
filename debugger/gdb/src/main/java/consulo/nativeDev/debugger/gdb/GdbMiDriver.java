@@ -111,6 +111,12 @@ public class GdbMiDriver implements NativeDebuggerDriver {
     private volatile boolean myRunRequested;
     private volatile @Nullable CompletableFuture<List<String>> myRegisterNames;
     private volatile @Nullable CompletableFuture<Map<String, List<String>>> myFileVariableNames;
+    /**
+     * The thread cuda-gdb stopped in a kernel - its stop carries a {@code CudaFocus}. {@code --thread} selects the host side
+     * of a thread, so the commands about this one go to the selected (device) thread instead.
+     */
+    private volatile @Nullable String myDeviceFocusThreadId;
+    private final Object myDeviceFrameLock = new Object();
 
     public GdbMiDriver(ProcessHandlerBuilderFactory processHandlerBuilderFactory,
                        Path gdbExecutable,
@@ -241,6 +247,15 @@ public class GdbMiDriver implements NativeDebuggerDriver {
 
     @Override
     public CompletableFuture<?> step(String threadId, NativeStepKind kind) {
+        if (isDeviceFocus(threadId)) {
+            return execute(switch (kind) {
+                case OVER -> "-exec-next";
+                case INTO -> "-exec-step";
+                case OUT -> "-exec-finish";
+                case INSTRUCTION_OVER -> "-exec-next-instruction";
+                case INSTRUCTION_INTO -> "-exec-step-instruction";
+            });
+        }
         GdbVersionPeculiarity peculiarity = peculiarity();
         return execute(switch (kind) {
             case OVER -> peculiarity.execNextCommand(threadId);
@@ -275,7 +290,8 @@ public class GdbMiDriver implements NativeDebuggerDriver {
 
     @Override
     public CompletableFuture<List<NativeFrame>> getFrames(String threadId, int from, int count) {
-        String command = peculiarity().stackListFramesCommand(threadId) + " " + from + " " + (from + count - 1);
+        String command = (isDeviceFocus(threadId) ? "-stack-list-frames" : peculiarity().stackListFramesCommand(threadId))
+            + " " + from + " " + (from + count - 1);
         return send(command).thenApply(record -> {
             List<NativeFrame> frames = new ArrayList<>();
             for (MITList frame : GdbMiConverter.tuples(record.results().valueOf("stack"))) {
@@ -287,7 +303,7 @@ public class GdbMiDriver implements NativeDebuggerDriver {
 
     @Override
     public CompletableFuture<List<NativeVariable>> getVariables(NativeFrame frame) {
-        return send("-stack-list-variables" + frameOptions(frame) + " --no-values").thenCompose(record -> {
+        return sendInFrame(frame, "-stack-list-variables", " --no-values").thenCompose(record -> {
             List<CompletableFuture<NativeVariable>> variables = new ArrayList<>();
             for (MITList variable : GdbMiConverter.tuples(record.results().valueOf("variables"))) {
                 String name = GdbMiConverter.string(variable, "name");
@@ -317,8 +333,7 @@ public class GdbMiDriver implements NativeDebuggerDriver {
     @Override
     public CompletableFuture<List<NativeVariable>> getRegisters(NativeFrame frame) {
         return registerNames().thenCompose(names -> {
-            String command = "-data-list-register-values" + frameOptions(frame) + " --skip-unavailable N";
-            return send(command).thenApply(record -> {
+            return sendInFrame(frame, "-data-list-register-values", " --skip-unavailable N").thenApply(record -> {
                 List<NativeVariable> registers = new ArrayList<>();
                 for (MITList register : GdbMiConverter.tuples(record.results().valueOf("register-values"))) {
                     int number = GdbMiConverter.integer(register, "number", -1);
@@ -425,6 +440,7 @@ public class GdbMiDriver implements NativeDebuggerDriver {
         }
 
         String threadId = GdbMiConverter.string(results, "thread-id");
+        myDeviceFocusThreadId = GdbMiConverter.tuple(results, "CudaFocus") == null ? null : threadId;
         MITList frameTuple = GdbMiConverter.tuple(results, "frame");
         NativeFrame frame = threadId == null || frameTuple == null ? null : GdbMiConverter.frame(threadId, frameTuple);
         boolean pauseRequested = myPauseRequested.getAndSet(false);
@@ -700,7 +716,7 @@ public class GdbMiDriver implements NativeDebuggerDriver {
     }
 
     private CompletableFuture<NativeVariable> createVariable(NativeFrame frame, String expression) {
-        return send("-var-create" + frameOptions(frame) + " - * " + GdbMiQuoteUtil.quote(expression)).thenApply(record -> {
+        return sendInFrame(frame, "-var-create", " - * " + GdbMiQuoteUtil.quote(expression)).thenApply(record -> {
             MITList results = record.results();
             String name = GdbMiConverter.string(results, "name");
             if (name != null) {
@@ -708,8 +724,7 @@ public class GdbMiDriver implements NativeDebuggerDriver {
             }
             return variable(expression, results, name);
         }).exceptionallyCompose(error -> {
-            String command = "-data-evaluate-expression" + frameOptions(frame) + " " + GdbMiQuoteUtil.quote(expression);
-            return send(command).thenApply(record -> {
+            return sendInFrame(frame, "-data-evaluate-expression", " " + GdbMiQuoteUtil.quote(expression)).thenApply(record -> {
                 String value = GdbMiConverter.string(record.results(), "value");
                 return new NativeVariable(expression, null, value == null ? "" : value, false, null);
             });
@@ -822,6 +837,24 @@ public class GdbMiDriver implements NativeDebuggerDriver {
 
     private static String frameOptions(NativeFrame frame) {
         return " --thread " + frame.threadId() + " --frame " + frame.level();
+    }
+
+    private boolean isDeviceFocus(String threadId) {
+        return threadId.equals(myDeviceFocusThreadId);
+    }
+
+    /**
+     * {@code command} about {@code frame}. A frame of the device thread is selected first: {@code --frame} takes a
+     * {@code --thread}, which would leave the kernel.
+     */
+    private CompletableFuture<MIRecord> sendInFrame(NativeFrame frame, String command, String arguments) {
+        if (!isDeviceFocus(frame.threadId())) {
+            return send(command + frameOptions(frame) + arguments);
+        }
+        synchronized (myDeviceFrameLock) {
+            ignoreError(send("-stack-select-frame " + frame.level()));
+            return send(command + arguments);
+        }
     }
 
     private static NativeVariable variable(String displayName, MITList variable, @Nullable String reference) {
