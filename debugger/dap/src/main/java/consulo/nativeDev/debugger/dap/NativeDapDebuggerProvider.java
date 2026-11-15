@@ -109,7 +109,7 @@ public abstract class NativeDapDebuggerProvider implements NativeDebuggerProvide
         List<String> executableNames = getExecutableNames();
         if (pluginPath != null && !executableNames.isEmpty()) {
             // a file of the IDE - prepareExecutable puts it on the platform
-            String directory = platform.os().fileNamePrefix() + "-" + bundledName + platform.jvm().arch().fileNameSuffix();
+            String directory = platform.os().fileNamePrefix() + "-" + bundledName + platform.os().arch().fileNameSuffix();
             String executableName = platform.os().isWindows() ? executableNames.get(0) + ".exe" : executableNames.get(0);
             addExecutable(installations, pluginPath.toPath().resolve(directory).resolve(executableName));
         }
