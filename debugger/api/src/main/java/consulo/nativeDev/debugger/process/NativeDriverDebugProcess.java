@@ -29,6 +29,7 @@ import consulo.execution.debug.breakpoint.XLineBreakpoint;
 import consulo.execution.debug.evaluation.XDebuggerEditorsProvider;
 import consulo.execution.debug.frame.XExecutionStack;
 import consulo.execution.debug.frame.XSuspendContext;
+import consulo.execution.debug.step.HasRunToPosition;
 import consulo.execution.debug.ui.XDebugTabLayouter;
 import consulo.execution.icon.ExecutionIconGroup;
 import consulo.execution.process.ProcessTerminatedListener;
@@ -79,7 +80,7 @@ import java.util.function.Function;
  * @author VISTALL
  * @since 2026-10-06
  */
-public class NativeDriverDebugProcess extends XDebugProcess implements NativeDebugProcess, NativeDebuggerListener {
+public class NativeDriverDebugProcess extends XDebugProcess implements NativeDebugProcess, NativeDebuggerListener, HasRunToPosition {
     private static final String DEBUGGER_CONSOLE_CONTENT_ID = "NativeDebuggerCommandConsole";
     private static final int DEBUGGER_CONSOLE_TAB = 2;
 
@@ -241,11 +242,6 @@ public class NativeDriverDebugProcess extends XDebugProcess implements NativeDeb
 
     @Override
     public void startStepInto(@Nullable XSuspendContext context) {
-        step(context, NativeStepKind.INTO);
-    }
-
-    @Override
-    public void startForceStepInto(@Nullable XSuspendContext context) {
         step(context, NativeStepKind.INTO);
     }
 

@@ -20,6 +20,7 @@ import consulo.execution.debug.breakpoint.XLineBreakpointType;
 import consulo.execution.debug.evaluation.XDebuggerEditorsProvider;
 import consulo.execution.debug.frame.XStackFrame;
 import consulo.execution.debug.frame.XSuspendContext;
+import consulo.execution.debug.step.HasForceStepInto;
 import consulo.execution.debugger.dap.DAPDebugProcess;
 import consulo.execution.debugger.dap.DAPStackFrame;
 import consulo.execution.debugger.dap.protocol.Capabilities;
@@ -67,7 +68,7 @@ import java.util.concurrent.Executor;
  * @author VISTALL
  * @since 2026-10-06
  */
-public class NativeDapDebugProcess extends DAPDebugProcess implements NativeDebugProcess {
+public class NativeDapDebugProcess extends DAPDebugProcess implements NativeDebugProcess, HasForceStepInto {
     private static final long ADAPTER_EXIT_TIMEOUT_MS = 2000;
 
     private final NativeDebugTarget myTarget;
@@ -168,11 +169,11 @@ public class NativeDapDebugProcess extends DAPDebugProcess implements NativeDebu
     public void startForceStepInto(@Nullable XSuspendContext context) {
         List<String> commands = myProvider.getForceStepIntoCommands();
         if (commands.isEmpty() || myTarget.stepIntoWithoutSources()) {
-            super.startForceStepInto(context);
+            startStepInto(context);
             return;
         }
         myForceStepIntoActive = true;
-        executeCommands(commands).whenComplete((o, error) -> super.startForceStepInto(context));
+        executeCommands(commands).whenComplete((o, error) -> startStepInto(context));
     }
 
     @Override
